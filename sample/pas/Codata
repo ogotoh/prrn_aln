@@ -1,0 +1,34 @@
+ENTRY            S03172     #type complete
+TITLE            albumin b-32 - maize
+ORGANISM         #formal_name Zea mays #common_name maize
+DATE             07-Sep-1990 #sequence_revision 07-Sep-1990 #text_change
+                   31-Dec-1993
+ACCESSIONS       S03172
+REFERENCE        S03172
+   #authors      di Fonzo, N.; Hartings, H.; Brembilla, M.; Motto, M.; Soave,
+                   C.; Navarro, E.; Palau, J.; Rhode, W.; Salamini, F.
+   #journal      Mol. Gen. Genet. (1988) 212:481-487
+   #title        The b-32 protein from maize endosperm, an albumin regulated
+                   by the O2 locus: nucleic acid (cDNA) and amino acid
+                   sequences.
+   #cross-references MUID:88334499
+   #accession    S03172
+      ##molecule_type mRNA
+      ##residues      1-303 ##label DI1
+      ##cross-references EMBL:X07987
+CLASSIFICATION   #superfamily rRNA N-glycosidase; rRNA N-glycosidase homology
+SUMMARY          #length 303  #molecular-weight 32427  #checksum 9972
+SEQUENCE
+                 5        10        15        20        25        30
+       1 M A E T N P E L S D L M A Q T N K K I V P K F T E I F P V E
+      31 D V N Y P Y S A F I A S V R K D V I K H C T D H K G I F Q P
+      61 V L P P E K K V P E L W F Y T E L K T R T S S I T L A I R M
+      91 D N L Y L V G F R T P G G V W W E L A R P A T P T S S A T T
+     121 P G G S A S A A G T R T S S A T R V W R P S P W A A R D D Q
+     151 G R Q R P G E E E E D G D T G G G G G A D A D A D A G G A E
+     181 L A A A A A A A D P Q A D T K S K L V K L V V M V C E G L R
+     211 F N T L S R T V D A G F N S Q H G V T L T V T Q G K Q V Q K
+     241 W D R I S K A A F E W A D H P T A V I P D M Q K L G I K N K
+     271 N E A A R I V A L V K N Q T T A A A A A A T A A S A D N D D
+     301 D E A
+///

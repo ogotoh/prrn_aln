@@ -1,0 +1,185 @@
+#       Makefile.in for prrn/aln
+#       Copyright(c) Osamu Gotoh <<o.gotoh@aist.go.jp>>
+exec_prefix = /usr/local/bin
+table_dir = /usr/local/bin
+alndbs_dir = /db/seqdb
+CXX  = g++
+CFLAGS = -O3
+RANLIB = ranlib
+LD  = g++
+AR = ar ru
+DEL = rm -f
+DEFLT = -DSSHP=1 -DM_THREAD=1
+
+CXX := $(CXX) $(CFLAGS) $(DEFLT)
+
+.SUFFIXES: .o .c .cc .h .sh
+
+PROG = prrn prrn5 aln iden phyln makmdm makdbs rdn utn utp upg nj decomp sltree
+
+STDH = stdtype.h
+CLIB = clib.a -lpthread
+HLIB = hblib.a $(CLIB)
+SLIB = sblib.a $(CLIB)
+
+.c.o:
+	$(CXX) -c $<
+.cc.o:
+	$(CXX) -c $<
+
+.c:
+	$(CXX) -o $@ $< $(CLIB)
+
+
+all: $(PROG) 
+
+clean:
+	$(DEL) $(PROG) *.exe
+clear:
+	$(DEL) $(PROG) *.exe *.o *.a
+clearall:
+	$(DEL) $(PROG) core *.o *.a *.exe *% *BAK Makefile iolib.h
+
+tar:
+	$(DEL) *.o *.a *% *BAK *~ Makefile iolib.h $(PROG)
+	cd .. ; \
+	Cur=`pwd` ; \
+	Pnm=`basename $$Cur` ; \
+	cd .. ; \
+	tar cvf Sources.tar $$Pnm
+
+install:
+	test -d $(exec_prefix) || mkdir $(exec_prefix)
+	cp $(PROG) $(exec_prefix)
+	test -d $(table_dir) || mkdir $(table_dir)
+	@if test "$(table_dir)" != "$(CURDIR)/../table"; then \
+		cp -pfR ../table/????* $(table_dir); \
+	fi
+	./makmdm $(table_dir)
+	test -d $(alndbs_dir) || mkdir $(alndbs_dir)
+	@if test "$(alndbs_dir)" != "$(CURDIR)/../seqdb"; then \
+		cp -pfR ../seqdb/????* $(alndbs_dir); \
+	fi
+
+
+uninstall uninst:
+	cd $(exec_prefix); rm -f $(PROG)
+	cd $(table_dir); rm -f $(TABLE)
+
+test:   $(PROG)
+	@if test -r $(table_dir)/mdm_mtx; then \
+	  ./test.sh; \
+	else \
+	   echo "please make install before test"; \
+	fi
+
+wc:
+	wc $(SRC)
+ls:
+	ls $(SRC)
+
+aln:	aln.c aln.h gaps.h vmf.h wln.h seq.h maln.h mgaps.h \
+	mseq.h autocomp.h phyl.h fspscore.h $(HLIB)
+	$(CXX) -o aln aln.c $(HLIB) -lm
+iden:	iden.o autocomp.o $(SLIB)
+	$(CXX) -o iden iden.o autocomp.o $(SLIB) -lm
+makdbs:	makdbs.c dbs.h seq.h bitpat.h $(HLIB)
+	$(CXX) -o makdbs makdbs.c $(HLIB) -lm
+makmdm:	makmdm.c mdm.h $(CLIB)
+	$(CXX) -o makmdm makmdm.c $(CLIB) -lm
+phyln:	phyl.c phyl.h autocomp.h $(HLIB)
+	$(CXX) -o phyln -DPHYL phyl.c $(HLIB) -lm
+prrn:	prrn.o $(HLIB)
+	$(CXX) -o prrn prrn.o $(HLIB) -lm
+prrn5:	prrn5.o prrn.h adjmat.o sltree.o blksrc.o fwd2b1.o $(HLIB)
+	$(CXX) -o prrn5 prrn5.o adjmat.o sltree.o blksrc.o fwd2b1.o $(HLIB) -lm
+utp:	utp.o utilseq.o prs.o pattern.o $(HLIB)
+	$(CXX) -o utp utp.o utilseq.o prs.o pattern.o $(HLIB) -lm
+utn:	utn.o extcds.o utilseq.o resite.o pattern.o $(HLIB)
+	$(CXX) -o utn utn.o extcds.o utilseq.o resite.o pattern.o $(HLIB) -lm
+rdn:	rdn.o       $(HLIB)
+	$(CXX) -o rdn rdn.o $(HLIB) -lm
+upg:	phyl.c phyl.h $(HLIB)
+	$(CXX) -o upg -DUPG phyl.c $(HLIB) -lm
+nj:	phyl.c phyl.h $(HLIB)
+	$(CXX) -o nj -DNJ phyl.c $(HLIB) -lm 
+decomp: decomp.c $(SLIB)
+	$(CXX) -o decomp decomp.c $(SLIB)
+sltree:	sltree.h sltree.c adjmat.h adjmat.o blksrc.o qdiv.o divseq.o autocomp.o $(SLIB)
+	$(CXX) -o $@ -DMAIN sltree.c adjmat.o blksrc.o qdiv.o divseq.o autocomp.o $(SLIB)
+
+aln.o:	aln.h vmf.h wln.h mseq.h maln.h mgaps.h autocomp.h phyl.h consreg.h fspscore.h
+aln2.o:	aln2.c	seq.h		aln.h
+autocomp.o:	autocomp.c autocomp.h $(STDH)
+codepot.o:	codepot.c	codepot.h
+css.o:	css.c css.h seq.h
+dbs.o:	dbs.c dbs.h $(STDH)
+fspscore.o:	fspscore.c	seq.h	aln.h	phyl.h	ssp.h
+fwd2a1.o:	fwd2a1.c	aln.h	seq.h
+fwd2a3.o:	fwd2a3.c	aln.h	seq.h
+fwd2h1.o:	fwd2h1.c	aln.h	seq.h	codepot.h
+fwd2h3.o:	fwd2h3.c	aln.h	seq.h	codepot.h
+fwd2h.o:	fwd2h.h fwd2h.c aln.h mseq.h maln.h gfreq.h vmf.h
+fwd2s1.o:	fwd2s1.c	aln.h	seq.h	codepot.h
+fwd2c.o:	fwd2c.c fwd2c.h aln.h maln.h seq.h
+gaps.o:	    gaps.c  gaps.h  seq.h
+gfreq.o:    gfreq.c	seq.h
+gsinfo.o:	gsinfo.c	gsinfo.h	seq.h		aln.h
+mgaps.o:	mgaps.c	seq.h aln.h mgaps.h gfreq.h
+maln2.o:	maln2.c	aln.h	seq.h
+	$(CXX) -o maln2.o -DGENOMIC=0 -c maln2.c
+maln2.o:	maln2.c fwd2b.h aln.h maln.h seq.h
+pattern.o:  pattern.c	pattern.h
+phyl.o:	phyl.c phyl.h
+prrn.o:	    prrn.c  gaps.h  seq.h	phyl.h
+prrn5.o:    prrn5.c  prrn5.h gaps.h  seq.h	divseq.h
+qdiv.o:	qdiv.c aln.h wln.h utilseq.h bitpat.h qdiv.h
+randiv.o:   randiv.c	randiv.h    seq.h	divseq.h
+resite.o:   resite.c	resite.h    pattern.h	seq.h
+simmtx.o:	simmtx.c seq.h aln.h mdm.h
+ssp.o:	ssp.c	ssp.h	seq.h
+sqpr.o:	sqpr.c	seq.h		dbs.h	seq.h
+seq.o:	seq.c	seq.h		aln.h	dbs.h	seq.h
+utilseq.o:	utilseq.c	seq.h
+vmf.o:	vmf.c vmf.h $(STDH)
+wln.o:	wln.c	seq.h	    aln.h	wln.h
+extcds.o:	extcds.c seq.h dbs.h makcds.h
+prs.o:	prs.c prs.h seq.h
+adjmat.o:	adjmat.c adjmat.h
+sltree.o:	sltree.c sltree.h adjmat.h
+blksrc.o:	blksrc.c blksrc.h
+
+hblib.a: aln2.o autocomp.o codepot.o consreg.o css.o dbs.o \
+	fspscore.o dpunit.o fwd2c.o fwd2d1.o fwd2h.o fwd2s2.o \
+	gaps.o gfreq.o gsinfo.o maln2.o mgaps.o mseq.o \
+	pattern.o divseq.o phyl.o bitpat.o qdiv.o randiv.o utilseq.o \
+	seq.o simmtx.o sqpr.o vmf.o wln.o ssp.o
+	$(AR) hblib.a aln2.o autocomp.o codepot.o consreg.o css.o dbs.o \
+	fspscore.o dpunit.o fwd2c.o fwd2d1.o fwd2h.o fwd2s2.o \
+	gaps.o gfreq.o gsinfo.o maln2.o mgaps.o mseq.o \
+	pattern.o divseq.o  phyl.o bitpat.o qdiv.o randiv.o utilseq.o \
+	seq.o simmtx.o sqpr.o vmf.o wln.o ssp.o
+	$(RANLIB) hblib.a
+
+sblib.a: aln2.o dbs.o gaps.o codepot.o bitpat.o \
+	gsinfo.o fwd2b1.o fwd2d1.o fwd2h1.o fwd2s1.o \
+	sqpr.o simmtx.o seq.o utilseq.o vmf.o wln.o
+	$(AR) sblib.a aln2.o dbs.o gaps.o codepot.o bitpat.o \
+	gsinfo.o fwd2b1.o fwd2d1.o fwd2h1.o fwd2s1.o \
+	sqpr.o simmtx.o seq.o utilseq.o vmf.o wln.o
+	$(RANLIB) sblib.a
+
+clib.o:		clib.c clib.h calcserv.h stdtype.h
+iolib.o:	iolib.c		stdtype.h
+mfile.o:	mfile.c		stdtype.h
+sets.o:		sets.c		stdtype.h
+supprime.o:	supprime.c	stdtype.h
+
+clib.a: clib.o iolib.o mfile.o sets.o supprime.o calcserv.o
+	$(AR) clib.a clib.o iolib.o mfile.o sets.o supprime.o calcserv.o
+	$(RANLIB) clib.a
+
+cmn.h:	$(STDH) 
+	touch cmn.h
+seq.h:	$(STDH)
+	touch seq.h

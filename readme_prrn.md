@@ -16,15 +16,20 @@ The program **prrn** is an implementation of the randomized iterative strategy f
 
 ## <a name="Inst">Install</a>
 
+If **aln** has not been installed, install **aln** first. **Prrn** 
+is installed separately from **aln** because **prrn** uses *double* while
+**aln** and other programs use *float* to encode floating point varables.
+
 ```
 % cd src
-% ./configure [--help]
+% make clearall
+% CFLAGS="-O3 -DDVAL=1" ./configure [--help]
 
 % make prrn
   or
 % make prrnall
 
-% make install
+% make install_prrn
 % make clearall
 ```
 

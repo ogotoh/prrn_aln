@@ -38,11 +38,11 @@
 #define	BKP_EXT	".bkp"
 
 #ifndef	DBS_DIR
-#define	DBS_DIR		"/home/gotoh/pub/prraln5.0.0/src/../seqdb"
+#define	DBS_DIR		"/home/gotoh/pub/prrnaln/src/../seqdb"
 #endif
 
 #ifndef	DBS_SDIR
-#define	DBS_SDIR	"/home/gotoh/pub/prraln5.0.0/src/../seqdb"
+#define	DBS_SDIR	"/home/gotoh/pub/prrnaln/src/../seqdb"
 #endif
 
 #ifndef ALN_DBS

@@ -15,7 +15,7 @@ CXX := $(CXX) $(CFLAGS) $(DEFLT)
 
 .SUFFIXES: .o .c .cc .h .sh
 
-PROG = prrn prrn5 aln iden phyln makmdm makdbs rdn utn utp upg nj decomp sltree
+PROG = aln iden phyln makmdm makdbs rdn utn utp upg nj decomp sltree
 
 STDH = stdtype.h
 CLIB = clib.a -lpthread
@@ -32,6 +32,7 @@ SLIB = sblib.a $(CLIB)
 
 
 all: $(PROG) 
+prrnall: prrn prrn4
 
 clean:
 	$(DEL) $(PROG) *.exe
@@ -61,6 +62,9 @@ install:
 		cp -pfR ../seqdb/????* $(alndbs_dir); \
 	fi
 
+install_prrn:
+	cp prrn $(exec_prefix)
+	test -e prrn4 && cp prrn4 $(exec_prefix)
 
 uninstall uninst:
 	cd $(exec_prefix); rm -f $(PROG)
@@ -89,10 +93,10 @@ makmdm:	makmdm.c mdm.h $(CLIB)
 	$(CXX) -o makmdm makmdm.c $(CLIB) -lm
 phyln:	phyl.c phyl.h autocomp.h $(HLIB)
 	$(CXX) -o phyln -DPHYL phyl.c $(HLIB) -lm
-prrn:	prrn.o $(HLIB)
-	$(CXX) -o prrn prrn.o $(HLIB) -lm
-prrn5:	prrn5.o prrn.h adjmat.o sltree.o blksrc.o fwd2b1.o $(HLIB)
-	$(CXX) -o prrn5 prrn5.o adjmat.o sltree.o blksrc.o fwd2b1.o $(HLIB) -lm
+prrn4:	prrn4.o $(HLIB)
+	$(CXX) -o prrn4 prrn4.o $(HLIB) -lm
+prrn:	prrn.o prrn.h adjmat.o sltree.o blksrc.o fwd2b1.o $(HLIB)
+	$(CXX) -o prrn prrn.o adjmat.o sltree.o blksrc.o fwd2b1.o $(HLIB) -lm
 utp:	utp.o utilseq.o prs.o pattern.o $(HLIB)
 	$(CXX) -o utp utp.o utilseq.o prs.o pattern.o $(HLIB) -lm
 utn:	utn.o extcds.o utilseq.o resite.o pattern.o $(HLIB)
@@ -105,8 +109,8 @@ nj:	phyl.c phyl.h $(HLIB)
 	$(CXX) -o nj -DNJ phyl.c $(HLIB) -lm 
 decomp: decomp.c $(SLIB)
 	$(CXX) -o decomp decomp.c $(SLIB)
-sltree:	sltree.h sltree.c adjmat.h adjmat.o blksrc.o qdiv.o divseq.o autocomp.o $(SLIB)
-	$(CXX) -o $@ -DMAIN sltree.c adjmat.o blksrc.o qdiv.o divseq.o autocomp.o $(SLIB)
+sltree:	sltree.h sltree.c adjmat.h adjmat.o blksrc.o qdiv.o autocomp.o $(SLIB)
+	$(CXX) -o $@ -DMAIN sltree.c adjmat.o blksrc.o qdiv.o autocomp.o $(SLIB)
 
 aln.o:	aln.h vmf.h wln.h mseq.h maln.h mgaps.h autocomp.h phyl.h consreg.h fspscore.h
 aln2.o:	aln2.c	seq.h		aln.h
@@ -131,8 +135,8 @@ maln2.o:	maln2.c	aln.h	seq.h
 maln2.o:	maln2.c fwd2b.h aln.h maln.h seq.h
 pattern.o:  pattern.c	pattern.h
 phyl.o:	phyl.c phyl.h
-prrn.o:	    prrn.c  gaps.h  seq.h	phyl.h
-prrn5.o:    prrn5.c  prrn5.h gaps.h  seq.h	divseq.h
+prrn4.o:	    prrn4.c  gaps.h  seq.h	phyl.h
+prrn.o:    prrn.c  prrn.h gaps.h  seq.h	divseq.h
 qdiv.o:	qdiv.c aln.h wln.h utilseq.h bitpat.h qdiv.h
 randiv.o:   randiv.c	randiv.h    seq.h	divseq.h
 resite.o:   resite.c	resite.h    pattern.h	seq.h
@@ -162,10 +166,10 @@ hblib.a: aln2.o autocomp.o codepot.o consreg.o css.o dbs.o \
 	$(RANLIB) hblib.a
 
 sblib.a: aln2.o dbs.o gaps.o codepot.o bitpat.o \
-	gsinfo.o fwd2b1.o fwd2d1.o fwd2h1.o fwd2s1.o \
+	gsinfo.o divseq.o fwd2b1.o fwd2d1.o fwd2h1.o fwd2s1.o \
 	sqpr.o simmtx.o seq.o utilseq.o vmf.o wln.o
 	$(AR) sblib.a aln2.o dbs.o gaps.o codepot.o bitpat.o \
-	gsinfo.o fwd2b1.o fwd2d1.o fwd2h1.o fwd2s1.o \
+	gsinfo.o divseq.o fwd2b1.o fwd2d1.o fwd2h1.o fwd2s1.o \
 	sqpr.o simmtx.o seq.o utilseq.o vmf.o wln.o
 	$(RANLIB) sblib.a
 

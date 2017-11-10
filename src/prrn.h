@@ -26,72 +26,20 @@ enum {EIJ, MCH, FSTI, FSTD, MDLI, MDLD, LSTI, LSTD};
 
 struct Outlier {int eij, match, ins_f, del_f, ins_m, del_m, ins_l, del_l;};
 
-static	const	int	NGLIST = 7;
+static	const	int	NGLIST = 3;
 static	const	char*	OLR_EXT = ".olr";
+static	const	char*	def_header = "MSA";
+static	const	int	N_Stamp = 10;
+static	const	int	artp_bit = INT_MIN;
+static	const	int	bit_mask = INT_MAX;
 
 //	construction of MSA with progressive methods
 
-class Msa : public Ssrel {
-	int	mtx_no;
-	float	u0;
-	int	lst_idx;
-	int*	lst_odr;
-	void	lstodr(Knode* node);
-	VTYPE	nomal_pairwt();
-	FTYPE	sp_score(FSTAT* fst);
-public:
-	mSeq*	seqs[4];
-	mSeq*&	msd;
-	Msa(AlnServer<mSeq>&svr);
-	~Msa() {clearseq(seqs, 3);}
-	int	checkss();
-	int	do_job();
-	void	swapprm();
-	void	stuckupseq(mSeq** argsq);
-	void	progressive();
-	VTYPE	phyl_pwt(int dyn_aln);
-	void	readgap(FILE* fd);
-	void	prntgap(FILE* fd);
-	void	individuallen(int* leng);
-	void	prrn_main(AlnServer<mSeq>* svr);
-	void	updatesrl(Ssrel* srl);
-	void	makemsa(const char* gtree);
-	mSeq*	prog_up(Knode* node, mSeq** argsq);
-	Outlier*	findoutliers(float* sdv);
-};
-
-class Prrn {
-	mSeq**	seqs;
-	Ssrel*	srl;
-	mSeq**	slst;
-	mSeq**	sbuf;
-	FTYPE*	wlst;
-	FTYPE*	wbuf;
-	GapsList*	glists[NGLIST];
-	GapsList*&	glst;	// glists[0]
-	GapsList*&	gorg;	// glists[3]
-	GapsList*&	gopt;	// glists[4]
-	GapsList*&	gmax;	// glists[5]
-	GapsList*&	grsv;	// glists[6]
-public:
-	Prrn(mSeq** sqs, Ssrel* trl, VTYPE& ref);
-	~Prrn() {
-	    delete[] slst; delete[] sbuf;
-	    delete[] wlst; delete[] wbuf;
-	}
-	GAPS*	gather(int k, int* gr, GapsList* gbuf);
-	SKL* 	divideseq(Randiv* rdiv, int* lst[], GapsList* gsubs[]);
-	VTYPE	rir(VTYPE prv);
-	int	totalNoSeq(int* lst);
-	VTYPE	profscore(FTYPE* pw);
-};
-
 template <class node_t>
 class ProgMsa {
-	mSeq*	msd;
 	mSeq**	seqs;
 	int	no_seqs;
-	DbsDt*	dbf;
+	DbsDt*	wdbf;
 	const	int*	verdid;
 	int*	lst_odr;
 	int	lst_idx;
@@ -104,7 +52,7 @@ public:
 	int	lstodr(int i) {return lst_odr[i];}
 	mSeq*	getseq(node_t*);
 	ProgMsa(DbsDt* db, const int* did, mSeq** subseqs, Subset* ss_ = 0, ALPRM* alp = 0) :
-	    seqs(subseqs), no_seqs(0), dbf(db), verdid(did), lst_odr(0), 
+	    seqs(subseqs), no_seqs(0), wdbf(db), verdid(did), lst_odr(0), 
 	    lst_idx(0), ss(ss_), pl(0), leaves(0), alnprm(alp) {
 	    if (ss) {
 		leaves = new mSeq*[ss->num];
@@ -112,11 +60,11 @@ public:
 		pl = ss->pool;
 	    }
 	}
-	ProgMsa(mSeq** sqs, int nn, ALPRM* alp = 0) : seqs(sqs), no_seqs(nn), dbf(0),
+	ProgMsa(mSeq** sqs, int nn, ALPRM* alp = 0) : seqs(sqs), no_seqs(nn), wdbf(0),
 	    verdid(0), lst_idx(0), ss(0), pl(0), leaves(0), alnprm(alp)
 	    {lst_odr = new int[nn];}
 	ProgMsa(Btree<node_t>& ltree, const char* guidetree) :
-	    seqs(0), no_seqs(0), dbf(0), verdid(0), lst_odr(0), lst_idx(0),
+	    seqs(0), no_seqs(0), wdbf(0), verdid(0), lst_odr(0), lst_idx(0),
 	    ss(0), pl(0), leaves(0), alnprm(&alprm) {
 	    if (!ltree.root) fatal(not_found, guidetree);
 	    ltree.fill_tname();
@@ -155,3 +103,166 @@ mSeq* ProgMsa<node_t>::prog_up(node_t* node)
 	}
 	return (msd);
 }
+
+//	Iterative refinement of MSA
+
+class IterMsa : public Ssrel {
+	VTYPE	sp_score(FSTAT* fst);
+	mSeq*	infc[4];
+	mSeq*&  msd;
+	mSeq**	seqs;
+	int	no_seqs;
+	mSeq*	rsv;
+	ALPRM*	alnprm;
+	int*	lst_odr;
+	DivMode	dm;
+public:
+	IterMsa(mSeq* sd, mSeq** sqs, int nn, ALPRM* alp = 0, 
+	    int* lstodr = 0, DivMode dm_ = TREEDIV);
+	IterMsa(mSeq* sd, mSeq** sqs = 0, Subset *ss = 0, 
+	    ALPRM* alp = 0, DivMode dm_ = TREEDIV);
+	~IterMsa() {clearseq(infc, 3);}
+	int	checkss();
+	bool	preprrn(bool bestn = false);
+	void	phyl_pwt();
+	void	readgap(FILE* fd);
+	void	prntgap(FILE* fd);
+	Outlier*	findoutliers(float* sdv);
+	mSeq*	msa(bool bestn = false);
+};
+
+struct ThreadArg {
+	mSeq**	sqs;
+	SKL**	skl;
+	int**	lst;
+	VTYPE	scr;
+	MCTYPE	bch;
+	ALPRM*	alp;
+	VTYPE	pwt;
+	GapsList*	gsub[2];
+};
+
+class Prrn {
+	mSeq**  seqs;
+	mSeq*&	msd;
+	ALPRM*	alnprm;
+	Ssrel*  srl;
+	int	num;
+	int	no_thread;
+	INT	countaln;
+	DivMode	dm;
+	pthread_t*	handle;
+	ThreadArg*	thargs;
+	mSeq**	thseqs;
+	SKL**	thskls;
+	PwdM**	thpwds;
+	int**	thlsts;
+	int*	thlbuf;
+	GapsList*  glists[NGLIST];
+	mSeq**  slst;
+	mSeq**  sbuf;
+	VTYPE*  wlst;
+	VTYPE*  wbuf;
+#if USE_WEIGHT
+	VTYPE*	wfact;
+	void	childfact(Knode* node, double fact);
+	VTYPE	calcfact(VTYPE* w, Knode* node);
+#endif
+	GapsList*	glst;   // glists[0]
+	int	best_k;
+	GAPS*	gather(int k, int* gr = 0, GapsList* gbuf = 0);
+	VTYPE	onecycle(SKL** skl, VTYPE pwt = 1.);
+	VTYPE	onecycle(SKL** skl, int** lb, Randiv* rdiv);
+	VTYPE	onecycle(SKL** skl, int** lb, int k = -1);
+	VTYPE	best_of_n(SKL** skl, int** lb, Randiv* rdiv);
+public:
+	Prrn(mSeq** sqs, ALPRM* alp, Ssrel* trl, VTYPE& ref, 
+	    bool bestn = false, DivMode dm_ = TREEDIV);
+	~Prrn();
+	SKL*    divideseq(Randiv* rdiv, int* lst[], GapsList* gsubs[], VTYPE* pwt, MCTYPE* bch = 0);
+	SKL*    divideseq(MCTYPE mcran, int* lst[], GapsList* gsubs[], VTYPE* pwt);
+	VTYPE   rir(VTYPE prv);
+	int     totalNoSeq(int* lst);
+};
+
+typedef int	(*FGET)(FILE* fd, const char* fn);
+
+struct Sltree {
+	Slnode*	root;
+	int	sid;
+	int	tid;
+	int	vrtl;
+	FGET	fget;
+	bool	operator<(const Sltree& right) const {
+	    return (root->ndesc > right.root->ndesc);	// descending order
+	}
+};
+
+class SlfPrrn {
+	int	no_trees;
+	int	no_outsider;
+	ALPRM	alnprm;
+	const	int*	verdid;
+	DbsDt*	wdbf;
+	std::vector<int>	outsiders;
+	std::vector<Slnode*>*	trees;
+	int	no_seqs;
+	void	findap(Slnode* node, std::vector<Slnode*>& subtrees);
+	void	move_to_outsiders(Slnode*& node);
+	int	restruct(Slnode* node);
+	int	make_artps(std::vector<Slnode*>& subtrees);
+public:
+	mSeq**	seqs;
+	mSeq*	make_msa(int molc);
+	mSeq*	make_msa(Slnode* node, bool sglthrd);
+	mSeq*	print_submsas();
+	void	prune_subtrees();
+	SlfPrrn(Slforest& slf) 
+	    : no_trees(slf.get_trees(true)), no_outsider(slf.no_outsiders()),
+		alnprm(alprm), verdid(slf.get_verdid()), wdbf(slf.dbf()), 
+		trees(slf.trees), no_seqs(0), seqs(0)  {
+		int*	osdr = slf.outsiders();
+		outsiders.assign(&osdr[0], &osdr[no_outsider]);
+	}
+	~SlfPrrn() {}
+};
+
+class Msa : public Ssrel {
+	int	mtx_no;
+	float	u0;
+	int	lst_idx;
+	int*	lst_odr;
+	void	lstodr(Knode* node);
+	mSeq*	msd;
+	void	phylsort();
+	FTYPE	nomal_pairwt();
+public:
+	Msa(mSeq* isd) : Ssrel(isd), mtx_no(1), u0(0.),
+	    lst_idx(0), lst_odr(0), msd(isd) { }
+	~Msa() {}
+	Outlier*	findoutliers(float* sdv);
+	mSeq*	output();
+};
+
+class RunStat {
+	FILE*	fmessg;
+	int	timepoint;
+	int	previoust;
+	int	values[N_Stamp];
+	time_t	timestamp[N_Stamp];
+public:
+	void	stamp(int val = 0);
+	void	conclude();
+	void	setfmessg(int& argc, const char**& argv) {
+	    const	char* val = getarg(argc, argv);
+	    if (val && *val) {
+		if (!(fmessg = fopen(val, "w"))) fatal(no_file, val);
+	    } else	fmessg = stderr;
+	}
+	RunStat() : fmessg(0), timepoint(0), previoust(0) {
+	    vclear(values, N_Stamp);
+	    vclear(timestamp, N_Stamp);
+	}
+	~RunStat() {if (fmessg && fmessg != stderr) fclose(fmessg);}
+};
+

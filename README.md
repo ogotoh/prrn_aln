@@ -1,6 +1,8 @@
 # [ALN](./readme_aln.md), [PRRN](./readme_prrn.md), and [Refgs.pl](./readme_refgs.md)
 
-## 
+## Pairwise sequence alignment, multiple sequence alignment, and homology-based gene prediction
+### Present Version 5.1.0
+### Last Updated 2017-02-15
 
 *   [Overview](#Ov)
 *   [System](#Sys)
@@ -11,7 +13,7 @@
 
 ## <a name="Ov">Overview</a>
 
-This repository contains sequence alignment and homology-based gene prediction programs developed by Osamu Gotoh and associates. [**Aln**](./readme_aln.md) performs pairwise alignment between sequences or pre-aligned groups of sequences, whereas [**Prrn**](./readme_prrn.md) performs multiple sequence alignment (MSA) of DNA or protein sequences. These programs use common internal codes and the same sequence file format described below. [**Refgs.pl**](./readme_refgs.md) is a perl script that performs concerted gene prediction and multiple sequence alignment, taking advantage of the unique feature of **prrn** that generates gene-structure-aware multiple protein sequence alignment (GSA-MPSA). A related program **spaln** that seamlessly performs genome mapping and spliced alignment is presented in a separate repository. For further details, crick on the individual tags.
+This repository contains sequence alignment and homology-based gene prediction programs developed by Osamu Gotoh and associates. [**Aln**](./readme_aln.md) performs pairwise alignment between sequences or pre-aligned groups of sequences, whereas [**Prrn**](./readme_prrn.md) performs multiple sequence alignment (MSA) of DNA or protein sequences. These programs use common internal codes and the same sequence file format described below. [**Refgs.pl**](./readme_refgs.md) is a perl script that performs concerted gene prediction and multiple sequence alignment, taking advantage of the unique feature of **prrn** that generates gene-structure-aware multiple protein sequence alignment (GSA-MPSA). A related program [**spaln**](https://github.com/ogotoh/spaln.git) that seamlessly performs genome mapping and spliced alignment is presented in a separate repository. For further details, crick on the individual tags.
 
 ## <a name="Sys">System</a>
 
@@ -212,7 +214,7 @@ where \<Position\> is a numeral that indicates the sequence position of the firs
 
 ### Special Characters
 
-Three characters, dash '-', tilde '~' and caret '^' have special meanings in a multiple-sequence file of the native format. A dash indicates a 'deletion' introduced by some alignment procedure. Be careful not to use a space or dot instead of a dash. Spaces and dots are simply ignored, so that the file may be interpreted in a totally unexpected way. A tilde means the same residue as that in the first sequence line on that column in the block. On the other hand, a caret means the same residue as that in the previous sequence line on that column. These ditto characters are convenient in representing an alignment of closely related sequences. Neither '~' nor '^' is allowed in the first sequence line in each block.
+Three characters, dash '-', tilde '\~' and caret '^' have special meanings in a multiple-sequence file of the native format. A dash indicates a 'deletion' introduced by some alignment procedure. Be careful not to use a space or dot instead of a dash. Spaces and dots are simply ignored, so that the file may be interpreted in a totally unexpected way. A tilde means the same residue as that in the first sequence line on that column in the block. On the other hand, a caret means the same residue as that in the previous sequence line on that column. These ditto characters are convenient in representing an alignment of closely related sequences. Neither '\~' nor '^' is allowed in the first sequence line in each block.
 
 ### Information on gene structures
 

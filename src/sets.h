@@ -16,7 +16,7 @@
 *	Graduate School of Informatics, Kyoto University
 *	Yoshida Honmachi, Sakyo-ku, Kyoto 606-8501, Japan
 *
-*	Copyright(c) Osamu Gotoh <<o.gotoh@i.kyoto-u.ac.jp>>
+*	Copyright(c) Osamu Gotoh <<o.gotoh@aist.go.jp>>
 *****************************************************************************/
 
 #ifndef  _SETS_H_
@@ -41,16 +41,6 @@ struct Subset {
 	Subset(int n, const char* str);
 	~Subset();
 	void	rsubset(int n, const char* ps = 0, FILE* fd = 0);
-};
-
-struct Lutab {
-	int*	tab;
-	int	tsz;
-	int*	ent;
-	int*	mem;
-	int	esz;
-	Lutab(int* tab, int tsz);
-	~Lutab();
 };
 
 #endif

@@ -20,11 +20,11 @@
 *	Graduate School of Informatics, Kyoto University
 *	Yoshida Honmachi, Sakyo-ku, Kyoto 606-8501, Japan
 *
-*	Copyright(c) Osamu Gotoh <<o.gotoh@i.kyoto-u.ac.jp>>
+*	Copyright(c) Osamu Gotoh <<o.gotoh@aist.go.jp>>
 *****************************************************************************/
 
 #ifndef _MGAPS_H_
-#define _MGAPS_H
+#define _MGAPS_H_ 1
 
 /*	Header to mgaps.c	*/
 

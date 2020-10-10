@@ -85,7 +85,7 @@ Fwd2c<recd_t>::Fwd2c(mSeq* _seqs[], PwdM* _pwd, const bool trb,
 	u2divu1 = pwd->BasicGEP < 0? (FTYPE) pwd->LongGEP / pwd->BasicGEP: 0;
 	v2divv1 = pwd->BasicGOP < 0? (FTYPE) pwd->LongGOP / pwd->BasicGOP: 0;
 	if (pwdw) wdw = *pwdw;
-	else if (!rectangle) stripe((Seq**) seqs, &wdw, pwd->alnprm.sh);
+	else if (!rectangle) stripe((const Seq**) seqs, &wdw, pwd->alnprm.sh);
 	vmf = trb? new Vmf(): 0;
 	int	l = rectangle? b->right - b->left + 2: wdw.width;
 	int	n = (rectangle? b->left: wdw.lw) - 1;
@@ -317,13 +317,13 @@ VTYPE Fwd2c<recd_t>::forwardA(long pp[])
 		} else if (hdiag->dir == NEWD)
 		    hdiag->ptr = vmf? vmf->add(m, n, hdiag->ptr): n - m;
 #if FDEBUG
-		if (algmode.nsa & 8) {
+		if (OutPrm.debug) {
 		    printf("%2d %2d %6.1lf %6.1lf %6.1lf %2d\n",
 			m + 1, n + 1, (double) hdiag->val, (double) g->val,
 			(double) f1->val, hdiag->dir);
 		}
 #endif
-		gswap(*hdiag, *h);
+		swap(*hdiag, *h);
 	    }   /* end of n-loop */
 	    if (a_in_zone) ++api;
 	    if (a->inex.exgr) store_ild(mfd, h - 1, --n - m, mxd);
@@ -385,7 +385,7 @@ VTYPE Fwd2c<recd_t>::forwardB(long pp[])
 	    reset(f1);
 	    reset(f2);
 #if FDEBUG
-	if (algmode.nsa & 8) {
+	if (OutPrm.debug) {
 	    printf("%2d %2d %2d", m + 1, n + 1, h->dir);
 	    putvar(h->val); putchar('\n');
 	}
@@ -452,7 +452,7 @@ opt:
 		}
 		if (mx->val > h->val) copy(h, mx);	// non-diagonal
 #if FDEBUG
-		if (algmode.nsa & 8) {
+		if (OutPrm.debug) {
 		    printf("%2d %2d %2d ", m + 1, n + 1, h->dir);
 		    putvar(h->val); putvar(diag); 
 		    putvar(g->val); putvar(f1->val);
@@ -515,7 +515,7 @@ Colonies* Fwd2c<recd_t>::forwardC()
 	    recd_t*	hrb = hh[0] + n9 - m;
 
 #if DEBUG
-	if (algmode.nsa & 8) {
+	if (OutPrm.debug) {
 	    printf("%2d %2d %2d", m+1, n+1, h->dir);
 	    putvar(h->val); putchar('\n');
 	}
@@ -638,7 +638,7 @@ optC:
 		    }
 		}
 #if DEBUG
-	if (algmode.nsa & 8) {
+	if (OutPrm.debug) {
 		printf("%2d %2d %2d ", m + 1, n + 1, mx->dir);
 		putvar(mx->val); putvar(diag); 
 		putvar(g->val); putvar(f1->val);
@@ -681,15 +681,15 @@ SKL* swg2ndC(mSeq* seqs[], PwdM* pwd, Gsinfo* gsi, COLONY* clny)
 {
 	mSeq*&	a = seqs[0];
 	mSeq*&	b = seqs[1];
-	gswap(a->left, clny->mlb);
-	gswap(a->right, clny->mrb);
-	gswap(b->left, clny->nlb);
-	gswap(b->right, clny->nrb);
+	swap(a->left, clny->mlb);
+	swap(a->right, clny->mrb);
+	swap(b->left, clny->nlb);
+	swap(b->right, clny->nrb);
 	gsi->skl = align2(seqs, pwd, &gsi->scr, gsi);
-	gswap(a->left, clny->mlb);
-	gswap(a->right, clny->mrb);
-	gswap(b->left, clny->nlb);
-	gswap(b->right, clny->nrb);
+	swap(a->left, clny->mlb);
+	swap(a->right, clny->mrb);
+	swap(b->left, clny->nlb);
+	swap(b->right, clny->nrb);
 	return (gsi->skl);
 }
 

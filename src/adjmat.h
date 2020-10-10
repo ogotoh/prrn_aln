@@ -68,7 +68,7 @@ private:
 #if M_THREAD
 	void	MasterWorker(Seq** sqs, SrchBlk* prm);
 #endif
-	FTYPE	dist_align2(Seq* sqs[], PwdB* pwd);
+	FTYPE	dist_align2(Seq* sqs[], const PwdB* pwd);
 	FTYPE	dist_kmer(Seq* sqs[]);
 #if SPNRANK
 	void	fillmat(Seq* sqs[], FTYPE dist, int rnk);
@@ -89,7 +89,7 @@ protected:
 	Dhash<INT, int> verhash;
 public:
 	void	spaln_job(Seq* sqs[], SrchBlk* bks, AdjMatThQueue* q = 0);
-	AdjacentMat(const char* fn, FTYPE distthr = 100.);
+	AdjacentMat(const char* fn, FTYPE distthr = 100., int cmln = 1, bool sim = false);
 	AdjacentMat(int argc, const char** argv, int molc, 
 	    const char* catalog = 0, int min_seqs = 0);
 	AdjacentMat(Seq* sd);

@@ -16,7 +16,7 @@
 *	Graduate School of Informatics, Kyoto University
 *	Yoshida Honmachi, Sakyo-ku, Kyoto 606-8501, Japan
 *
-*	Copyright(c) Osamu Gotoh <<o.gotoh@i.kyoto-u.ac.jp>>
+*	Copyright(c) Osamu Gotoh <<o.gotoh@aist.go.jp>>
 *****************************************************************************/
 
 #ifndef  _FSPSCORE_H_
@@ -187,7 +187,7 @@ VTYPE SpScore<recd_t>::calcJxt()
 	azsi.dns = &athk;
 	bzsi.dns = &bthk;
 	Iiinfo*	iif = (SpbFact > 0 && ((a->sigII && a->sigII->pfqnum) || (b->sigII && b->sigII->pfqnum)))?
-	    new Iiinfo((Seq**) seqs, a->left, b->left): 0;
+	    new Iiinfo((const Seq**) seqs, a->left, b->left): 0;
 	calscr(l, l);
 	if (iif) scr += iif->StoreIIinfo(a->left + l, b->left + l);
 	if (fst) {
@@ -212,7 +212,7 @@ VTYPE SpScore<recd_t>::calcSkl()
 	bzsi.dns = &bthk;
 	int	span = 0;
 	Iiinfo*	iif = (SpbFact > 0 && ((a->sigII && a->sigII->pfqnum) || (b->sigII && b->sigII->pfqnum)))?
-	    new Iiinfo((Seq**) seqs, a->left, b->left, true): 0;
+	    new Iiinfo((const Seq**) seqs, a->left, b->left, true): 0;
 	while (--num) {
 	    ++skl;
 	    int	mi = skl->m - m;

@@ -35,7 +35,7 @@ const	char*	reducap;
 };
 
 class Kcomp : public Dhash<INT, int> {
-	INT*	ConvTab;
+	CHAR*	ConvTab;
 	void	makeHash(Seq* sd, int i, Bitpat_wq* bpp);
 public:
 	int	sid;
@@ -52,7 +52,7 @@ public:
 	    kmers = new KVpair<INT, int>[UnqKmers];
 	    vcopy(kmers, src.kmers, UnqKmers);
 	}
-	Kcomp(Seq* sd, INT sz, INT* ct, int i, int m = 1);
+	Kcomp(Seq* sd, INT sz, CHAR* ct, int i, int m = 1);
 	~Kcomp() {}
 	void	aliaseq(Kcomp* kd, bool tia = false) {
 	    *kd = *this;

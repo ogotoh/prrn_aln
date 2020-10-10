@@ -3,12 +3,12 @@
 *	Collection of functions for general use
 *
 *	vclear	vcopy	vset	vreverse	vmax	vmin
-*	max	min	max3	min3	max4	min4
-*	ipower	gswap
+*	max3	min3	max4	min4
+*	ipower	
 *	next_wd	wordcmp	isBlankLine  
 *	car	cdr	prefix	chop	replace
 *	queue	stack	fbisrch	insort
-*	comp2	comp3	decomp
+*	comb2	comb3	decomb
 *	Strlist
 *
 *	Osamu Gotoh, ph.D.	(-2001)
@@ -25,18 +25,50 @@
 *	Graduate School of Informatics, Kyoto University
 *	Yoshida Honmachi, Sakyo-ku, Kyoto 606-8501, Japan
 *
-*	Copyright(c) Osamu Gotoh <<o.gotoh@i.kyoto-u.ac.jp>>
+*	Copyright(c) Osamu Gotoh <<o.gotoh@aist.go.jp>>
 *****************************************************************************/
 #ifndef  _CLIB_
 #define  _CLIB_
 
 #include <math.h>
+#include <algorithm>
+#include "adddef.h"
 
+struct ALGMODE {
+	INT	nsa :   4;	// no/single/all alignments
+	INT	alg :   4;	// rigor in group sequnece
+	INT	bnd :   1;	// banded dp space
+	INT	mlt :   3;	// multiple output
+	INT	aut :	1;	// automatic param set
+	INT	lcl :   5;	// local or global
+	INT	lsg :   1;	// # of line pieces > 1 ?
+	INT	mns :   2;	// minus strand as well
+	INT	thr :   1;	// cutoff if < thr
+	INT	rng :   1;	// output range
+	INT	qck :   2;	// quick calculation
+	INT	lvl :	2;	// wilip initial level
+	INT	blk :	1;	// rapid genome scan
+	INT	any :	2;	// accept non-consensus spj
+	INT	crs :	2;	// cross species comparison
+	INT	slv :	1;	// salvage all positive blocks
+	INT	dim:	1;	// database seq in memory
+};
+
+using std::max ;
+using std::min ;
+using std::swap ;
+
+extern	int	thread_num;
+extern	int	cpu_num;
+extern	int	max_queue_num;
 extern	INT	supprime(INT n);
+extern	INT	str2uint(const char* str);
+extern	ALGMODE	algmode;
 
 static	const	int	KILO = 1024;
 static	const	int	MEGA = 1048576;
 static	const	long	GIGA = 1073741824;
+static	const	double	PI = 3.14159265358979323846;
 static	const	int	DefStackDepth = 128;
 static	const	int	defsunit = 128;
 static	const	int	defpunit = 16;
@@ -44,18 +76,8 @@ static	const	INT	SecondHS = 8;
 static	const	float	DefHashFact = 1.2;
 static	const	double	epsilon = 1e-6;
 static	const	int	HashovLS = 12;
-
-extern	INT	str2uint(const char* str);
-
-template <typename X> X max(X x, X y)
-{
-	return (x > y)? x: y;
-}
-
-template <typename X> X min(X x, X y)
-{
-	return (x < y)? x: y;
-}
+static	const	int	def_un_def = (INT_MIN / 8 * 7);
+static	const	float	FACT_QUEUE = 1.5;
 
 template <typename X> X* vcopy(X* dst, const X* src, int n)
 {
@@ -65,15 +87,16 @@ template <typename X> X* vcopy(X* dst, const X* src, int n)
 	return (head);
 }
 
-template <typename X> X* vset(X* dst, const X& val, int n)
+template <typename X> X* vset(X* dst, const X& val, size_t n)
 {
+	if (n == 0) return(dst);
 	if (!dst) dst = new X[n];
-	X*	head = dst;
-	while (n-- > 0) *dst++ = val;
-	return (head);
+	X*	w = dst + n;
+	while (--w >= dst) *w = val;
+	return (dst);
 }
 
-template  <typename X> void vclear(X* ary, const int n = 1)
+template  <typename X> inline void vclear(X* ary, const int n = 1)
 {
 	memset(ary, '\0', n * sizeof(X));
 }
@@ -94,11 +117,9 @@ template <typename X> X* vmin(const X* array, int n)
 
 template <typename X> X* vreverse(X* array, int n)
 {
-	for (int i = 0, j = n - 1; i < j; ++i, --j) {
-	    X	tmp = array[i];
-	    array[i] = array[j];
-	    array[j] = tmp;
-	}
+	X*	f = array;
+	X*	b = array + n - 1;
+	while (f < b) swap(*f++, *b--);
 	return (array);
 }
 
@@ -118,37 +139,30 @@ template <typename X> X vavsd(X& sd, X* array, int n)
 	return ((X) av);
 }
 
-template <typename X> X max3(X x, X y, X z)
+template <typename X> inline X max3(X x, X y, X z)
 {
 	if (y > x) x = y;
 	return (max(x, z));
 }
 
-template <typename X> X min3(X x, X y, X z)
+template <typename X> inline X min3(X x, X y, X z)
 {
 	if (y < x) x = y;
 	return (min(x, z));
 }
 
-template <typename X> X max4(X x, X y, X z, X w)
+template <typename X> inline X max4(X x, X y, X z, X w)
 {
 	if (y > x) x = y;
 	if (w > z) z = w;
 	return (max(x, z));
 }
 
-template <typename X> X min4(X x, X y, X z, X w)
+template <typename X> inline X min4(X x, X y, X z, X w)
 {
 	if (y < x) x = y;
 	if (w < z) z = w;
 	return (min(x, z));
-}
-
-template <typename X> void gswap(X& x, X& y)
-{
-	X temp = x;
-	x = y;
-	y = temp;
 }
 
 // key-value pair used by Dhash
@@ -165,7 +179,7 @@ protected:
 	INT	size2;
 	KVpair<key_t, val_t>*	hash;
 	KVpair<key_t, val_t>*	hz;
-	val_t	undef;
+	val_t	un_def;
 public:
 	Dhash(int n = 0, val_t ud = 0, float hf = DefHashFact);
 	~Dhash() {delete[] hash;}
@@ -177,36 +191,37 @@ public:
 	}
 	KVpair<key_t, val_t>*	assign(key_t ky, val_t vl = 1, bool first = false) {
 	    KVpair<key_t, val_t>*	sh = map(ky);
-	    if (!first || sh->val == undef) sh->val = vl;
+	    if (!first || sh->val == un_def) sh->val = vl;
 	    return (sh);
 	}
 	KVpair<key_t, val_t>*	incr(key_t ky, val_t vl = 1){
 	    KVpair<key_t, val_t>*	sh = map(ky);
-	    if (sh->val == undef) sh->val = 0;
+	    if (sh->val == un_def) sh->val = 0;
 	    sh->val += vl;
 	    return (sh);
 	}
-	int	count();
+	int	count() const;
 	KVpair<key_t, val_t>*	press(int* n, val_t* sum = 0);
 	void	clear() {
-	    KVpair<key_t, val_t> zero = {0, undef};
-	    if (undef)	vset(hash, zero, size1);
+	    KVpair<key_t, val_t> zero = {0, un_def};
+	    if (un_def)	vset(hash, zero, size1);
 	    else	vclear(hash, size1);
 	}
 	void	resize(int s = 0);
 	void	remove(key_t ky) {
 	    KVpair<key_t, val_t>*	sh = map(ky);
-	    sh->val = undef;
+	    sh->val = un_def;
 	}
 	KVpair<key_t, val_t>*	squeeze(int* n) {
 	    KVpair<key_t, val_t>* tmp = press(n);
 	    hash = 0;
 	    return (tmp);
 	}
+	val_t	undef() {return (un_def);}
 };
 
 template <class key_t, class val_t>
-Dhash<key_t, val_t>::Dhash(int n, val_t ud, float hf) : undef(ud)
+Dhash<key_t, val_t>::Dhash(int n, val_t ud, float hf) : un_def(ud)
 {
 	if (n == 0) {
 	    size1 = size2 = 0;
@@ -228,12 +243,12 @@ KVpair<key_t, val_t>* Dhash<key_t, val_t>::map(key_t key, bool record)
 	INT	v0 = v;
 	KVpair<key_t, val_t>*	sh = hash + v;
 
-	while (sh->val != undef && sh->key != key) {
+	while (sh->val != un_def && sh->key != key) {
 	    v = (v + u) % size1;
 	    if (v == v0) resize();
 	    sh = hash + v;
 	}
-	if (sh->val == undef) {
+	if (sh->val == un_def) {
 	    if (record) sh->key = key;
 	    else	sh = 0;
 	}
@@ -241,11 +256,11 @@ KVpair<key_t, val_t>* Dhash<key_t, val_t>::map(key_t key, bool record)
 }
 
 template <class key_t, class val_t>
-int	Dhash<key_t, val_t>::count()
+int	Dhash<key_t, val_t>::count() const
 {
 	int	c = 0;
 	for (KVpair<key_t, val_t>* sh = hash; sh < hz; ++sh)
-	    if (sh->val != undef) ++c;
+	    if (sh->val != un_def) ++c;
 	return (c);
 }
 
@@ -255,7 +270,7 @@ KVpair<key_t, val_t>* Dhash<key_t, val_t>::press(int* n, val_t* sum)
 	if (sum) *sum = 0;
 	KVpair<key_t, val_t>*	rh = hash;
 	for (KVpair<key_t, val_t>* sh = hash; sh < hz; ++sh) {
-	    if (sh->val != undef) {
+	    if (sh->val != un_def) {
 		*rh++ = *sh;
 		if (sum) *sum += sh->val;
 	    }
@@ -277,7 +292,7 @@ void Dhash<key_t, val_t>::resize(int s)
 	hz = hash + size1;
 	clear();
 	for (KVpair<key_t, val_t>* hw = hold; hw < zold; ++hw)
-	    if (hw->val != undef) assign(hw->key, hw->val);
+	    if (hw->val != un_def) assign(hw->key, hw->val);
 	delete[] hold;
 }
 
@@ -305,20 +320,20 @@ public:
 	}
 	~Queue() {delete[] queue;}
 	X	shift(X val) {
-	    gswap(val, queue[qp]);
+	    swap(val, queue[qp]);
 	    if (++qp == qsize) qp = 0;
 	    return (val);
 	}
 	X	unshift(X val) {
-	    gswap(val, queue[qp]);
+	    swap(val, queue[qp]);
 	    if (qp) --qp;
 	    else qp = qsize - 1;
 	    return (val);
 	}
-	X	oldest() {return queue[qp];}
+	X	oldest() const {return queue[qp];}
 };
 
-// priority queue
+// priority queue simple version without heap
 
 template <typename val_t>
 class PrQueue {
@@ -328,10 +343,9 @@ private:
 	int	front;
 	bool	dec_order;	// default is ascending order
 	bool	replace;	// may replace older value
-	Dhash<int, int>*	hpos;	// heap position of key
 public:				// initial data size, ascending order, never replace data
 	PrQueue(val_t* _data, int _size, int fr = 0, bool maxi = false, bool rep = false);
-	~PrQueue() {delete hpos;}
+	~PrQueue() {}
 	void	downheap(int k, int kk = 0);
 	void	upheap(int k);
 	val_t	shift();
@@ -339,12 +353,12 @@ public:				// initial data size, ascending order, never replace data
 	void	put(const val_t& x, int p = -1);
 	val_t	gettop() {return data[0];}
 	val_t&	operator[](int i) {return (data[i]);}
-	bool	empty() {return front == 0;}
-	int	size()	{return front;}
+	bool	empty() const{return front == 0;}
+	int	size() const {return front;}
 	void	reset() {front = 0;}
 	void	hsort();
 	int	find(const val_t& x);
-	bool	lt(const val_t& a, const val_t& b) {
+	bool	lt(const val_t& a, const val_t& b) const {
 		     return (dec_order? b < a: a < b);
 		}
 };
@@ -353,7 +367,6 @@ template <typename val_t>
 PrQueue<val_t>::PrQueue(val_t* _data, int _size, int fr, bool maxi, bool rep)
 	: data(_data), capacity(_size), front(fr), dec_order(maxi), replace(rep)
 {
-	hpos = (rep && capacity > HashovLS)? new Dhash<int, int>(2 * capacity, -1): 0;
 	for (int k = front / 2; --k >= 0; ) downheap(k);
 }
 
@@ -368,11 +381,9 @@ void PrQueue<val_t>::downheap(int k, int kmax)
 	    if (r < kmax && lt(data[r], data[l])) ++l;
 	    if (!lt(data[l], v)) break;
 	    data[k] = data[l];
-	    if (hpos) hpos->assign(data[k].key, k);
 	    k = l;
 	}
 	data[k] = v;
-	if (hpos) hpos->assign(data[k].key, k);
 }
 
 template <typename val_t>
@@ -382,12 +393,10 @@ void PrQueue<val_t>::upheap(int k)
 	int	h = (k - 1) / 2;
 	while (k && lt(v, data[h])) {
 	    data[k] = data[h];
-	    if (hpos) hpos->assign(data[k].key, k);
 	    k = h;
 	    h = (h - 1) / 2;
 	}
 	data[k] = v;
-	if (hpos) hpos->assign(data[k].key, k);
 }
 
 template <typename val_t>
@@ -395,7 +404,6 @@ val_t PrQueue<val_t>::shift()
 {
 	val_t v = data[0];
 	if (front > 0) {
-	    if (hpos) hpos->remove(data[0].key);
 	    data[0] = data[--front];
 	    downheap(0);
 	}
@@ -407,7 +415,6 @@ val_t PrQueue<val_t>::shift(val_t& x)
 {
 	val_t v = data[0];
 	if (front == capacity) {
-	    if (hpos) hpos->remove(data[0].key);
 	    data[0] = data[--front];
 	    downheap(0);
 	}
@@ -427,7 +434,6 @@ void PrQueue<val_t>::put(const val_t& x, int p)
 	    } else	p = 0;
 	}
 	if (lt(data[p], x)) {		// exam
-	    if (hpos) hpos->remove(data[p].key);
 	    data[p] = x;		// replace
 	    downheap(p);
 	}
@@ -437,10 +443,6 @@ void PrQueue<val_t>::put(const val_t& x, int p)
 template <typename val_t>	// default key finder
 int PrQueue<val_t>::find(const val_t& x)
 {
-	if (hpos) {
-	    KVpair<int, int>* kv = hpos->find(x.key);
-	    return kv? kv->val: -1;
-	}
         for (int i = 0; i < front; ++i)
             if (x == data[i]) return (i);
         return (-1);
@@ -450,7 +452,139 @@ template <typename val_t>
 void PrQueue<val_t>::hsort()	// heap sort data
 {
 	for (int k = front; --k > 0; ) {
-	    gswap(data[0], data[k]);
+	    swap(data[0], data[k]);
+	    downheap(0, k);
+	}
+}
+
+// priority queue without hash
+
+template <typename val_t>
+class PrQueue_wh {
+private:
+	val_t*	data;
+	int	capacity;
+	int	front;
+	bool	dec_order;	// default is ascending order
+	bool	replace;	// may replace older value
+	Dhash<int, int>*	hpos;	// heap position of key
+public:				// initial data size, ascending order, never replace data
+	PrQueue_wh(val_t* _data, int _size, int fr = 0, bool maxi = false, bool rep = false);
+	~PrQueue_wh() {delete hpos;}
+	void	downheap(int k, int kk = 0);
+	void	upheap(int k);
+	val_t	shift();
+	val_t	shift(val_t& x);
+	void	put(const val_t& x, int p = -1);
+	val_t	gettop() {return data[0];}
+	val_t&	operator[](int i) {return (data[i]);}
+	bool	empty() const{return front == 0;}
+	int	size() const {return front;}
+	void	reset() {front = 0; if (hpos) hpos->clear();}
+	void	hsort();
+	int	find(const val_t& x);
+	bool	lt(const val_t& a, const val_t& b) const {
+		     return (dec_order? b < a: a < b);
+		}
+};
+
+template <typename val_t>
+PrQueue_wh<val_t>::PrQueue_wh(val_t* _data, int _size, int fr, bool maxi, bool rep)
+	: data(_data), capacity(_size), front(fr), dec_order(maxi), replace(rep)
+{
+	hpos = new Dhash<int, int>(2 * capacity, -1);
+	for (int k = front / 2; --k >= 0; ) downheap(k);
+}
+
+template <typename val_t>
+void PrQueue_wh<val_t>::downheap(int k, int kmax)
+{
+	val_t	v = data[k];
+	if (kmax == 0) kmax = front;
+	while (k < kmax / 2) {
+	    int	l = 2 * k + 1;
+	    int	r = l + 1;
+	    if (r < kmax && lt(data[r], data[l])) ++l;
+	    if (!lt(data[l], v)) break;
+	    data[k] = data[l];
+	    hpos->assign(data[k].key, k);
+	    k = l;
+	}
+	data[k] = v;
+	hpos->assign(data[k].key, k);
+}
+
+template <typename val_t>
+void PrQueue_wh<val_t>::upheap(int k)
+{
+	val_t	v = data[k];
+	int	h = (k - 1) / 2;
+	while (k && lt(v, data[h])) {
+	    data[k] = data[h];
+	    hpos->assign(data[k].key, k);
+	    k = h;
+	    h = (h - 1) / 2;
+	}
+	data[k] = v;
+	hpos->assign(data[k].key, k);
+}
+
+template <typename val_t>
+val_t PrQueue_wh<val_t>::shift()
+{
+	val_t v = data[0];
+	if (front > 0) {
+	    hpos->remove(data[0].key);
+	    data[0] = data[--front];
+	    downheap(0);
+	}
+	return (v);
+}
+
+template <typename val_t>
+val_t PrQueue_wh<val_t>::shift(val_t& x)
+{
+	val_t v = data[0];
+	if (front == capacity) {
+	    hpos->remove(data[0].key);
+	    data[0] = data[--front];
+	    downheap(0);
+	}
+	data[front] = x;
+	upheap(front++);
+	return (v);
+}
+
+template <typename val_t>
+void PrQueue_wh<val_t>::put(const val_t& x, int p)
+{
+	if (p < 0) {			// new member
+	    if (front < capacity) {
+		data[front] = x;	// add
+		upheap(front++);
+		return;
+	    } else	p = 0;
+	}
+	if (lt(data[p], x)) {		// exam
+	    hpos->remove(data[p].key);
+	    data[p] = x;		// replace
+	    downheap(p);
+	}
+
+}
+
+template <typename val_t>	// default key finder
+int PrQueue_wh<val_t>::find(const val_t& x)
+{
+	KVpair<int, int>* kv = hpos->find(x.key);
+	return kv? kv->val: -1;
+}
+
+template <typename val_t>
+void PrQueue_wh<val_t>::hsort()	// heap sort data
+{
+	for (int k = front; --k > 0; ) {
+	    swap(data[0], data[k]);
 	    downheap(0, k);
 	}
 }
@@ -632,132 +766,159 @@ inline	char*	prefix(char* dst, const char* src, int n) {
 class Strlist {
 protected:
 	char*	strbuf;
-	int*	idxlst;
-	int	sunitsize;
-	int	punitsize;
-	int	totallen;
-	int	lastlen;
-	int	maxlen;
-	int	many;
+	INT*	idxlst;
+	INT	sunitsize;
+	INT	punitsize;
+	INT	totallen;
+	INT	lastlen;
+	INT	maxlen;
+	INT	many;
 	bool	filled;
+	void	format();
 public:
 	Strlist(int m = 1, int len = defsunit);
 	Strlist(const char* str);
 	Strlist(char* str, const char* delim);
 	Strlist(FILE* fd, int m = 0);
+#if USE_ZLIB
+	Strlist(gzFile gzfd, int m = 0);
+#endif
 	Strlist(Strlist& src);
 	~Strlist() {delete[] strbuf; delete[] idxlst;}
-	char*	operator[](int n) {
+	char*	operator[](INT n) const {
 	    return ((idxlst && n < many)? strbuf + idxlst[n]: strbuf);
 	}
-	int	size() {return (many - 1);}
+	INT	size() const {return (many);}
 	char*	assign(const Strlist& src);
 	char*	assign(const char* str);
 	char*	push(const char* str);
 	void	reset(int m = 0);
-	bool	unfilled() {return !filled;}
+	bool	unfilled() const {return !filled;}
 	void	setfill() {filled = true;}
-	bool	empty() {return !strbuf || !*strbuf;}
+	bool	empty() const {return !strbuf || !*strbuf;}
 	void	undo() {--many; totallen -= lastlen;}
 	char*	squeeze() {char* tmp = strbuf; strbuf = 0; return (tmp);}
-	int	longest() {return (maxlen? maxlen - 1: 0);}
+	INT	longest() const {return (maxlen? maxlen - 1: 0);}
 };
 
 // hash for string key
 
 template <class val_t>
-class StrHash : public Strlist {
+class StrHash {
 protected:
 	INT	size1;
 	INT	size2;
 	KVpair<INT, val_t>*	hash;
 	KVpair<INT, val_t>*	hz;
+	Strlist*	sl;
+	val_t	un_def;
 public:
-	StrHash(int n = 0, float hf = DefHashFact);
+	StrHash(int n = 0, val_t udf = def_un_def, float hf = DefHashFact);
 	StrHash(const char* fname);
-	~StrHash() {delete[] hash;}
+	StrHash(StrHash<val_t>& src) {*this = src;}
+	~StrHash() {delete sl; delete[] hash;}
 	KVpair<INT, val_t>* begin() {return hash;}
 	KVpair<INT, val_t>* end() {return hz;}
-	const char*	memname(INT iky) {return (strbuf + iky);}
-	KVpair<INT, val_t>* map(const char* ky, bool record = true);
-	KVpair<INT, val_t>* map(INT iky, bool record = true) {
-	    return map(strbuf + iky);
+	char*	strkey(INT iky) {return ((*sl)[iky]);}
+	KVpair<INT, val_t>* map(const char* ky, int record = 3);
+	KVpair<INT, val_t>* map(INT iky, int record = 3) {
+	    return map(strkey(iky));
 	}
 	KVpair<INT, val_t>* find(const char* ky) {
-	    return map(ky, false);
+	    return map(ky, 0);
 	}
 	KVpair<INT, val_t>* assign(const char* ky, 
 		val_t vl = 1, bool first = false) {
 	    KVpair<INT, val_t>*	sh = map(ky);
-	    if (!first || !sh->val) sh->val = vl;
+	    if (!first || sh->val == un_def) sh->val = vl;
 	    return (sh);
 	}
 	KVpair<INT, val_t>* incr(const char* ky, val_t vl = 1) {
 	    KVpair<INT, val_t>* sh = map(ky);
-	    sh->val += vl;
+	    if (sh->val == un_def) sh->val = vl;
+	    else	sh->val += vl;
 	    return (sh);
 	}
 	KVpair<INT, val_t>* incr(INT iky, val_t vl = 1) {
-	    return incr(strbuf + iky, vl);
+	    return incr(strkey(iky), vl);
 	}
 	KVpair<INT, val_t>* pile(const char* ky) {
-	    int	v = many;
+	    int	v = sl->size();
 	    KVpair<INT, val_t>* sh = map(ky);
-	    if (!sh->val) sh->val = v;
+	    if (sh->val == un_def) sh->val = v;
 	    return (sh);
 	}
 	KVpair<INT, val_t>* pile(INT iky) {
-	    return push(strbuf + iky);
+	    return push(strkey(iky));
 	}
-	int	count();
+	int	count() const;
 	KVpair<INT, val_t>* press(int* n, val_t* sum = 0);
-	void	clear() {vclear(hash, size1);}
+	void	clear() {
+	    if (un_def) {
+		KVpair<INT, val_t> zero = {0, un_def};
+		vset(hash, zero, size1);
+	    } else vclear(hash, size1);
+	}
+	int	size() {return sl->size();}
 	void	resize(int s = 0);
+	void	erase_sl()	{sl = 0;}
+	char*	squeeze() {return (sl->squeeze());}
+	val_t	undef() {return (un_def);}
 };
 
 template <class val_t>
-StrHash<val_t>::StrHash(int n, float hf) : Strlist(n? n: 1)
+StrHash<val_t>::StrHash(int n, val_t udf, float hf) : un_def(udf)
 {
 	if (n == 0) {
 	    size1 = size2 = 0;
 	    hash = hz = 0;
+	    sl = 0;
 	} else {
 	    size1 = supprime(int(hf * n));
+	    sl = new Strlist(size1);
 	    hash = new KVpair<INT, val_t>[size1];
 	    hz = hash + size1;
-	    vclear(hash, size1);
+	    if (un_def) {
+		KVpair<INT, val_t> zero = {0, un_def};
+		vset(hash, zero, size1);
+	    } else vclear(hash, size1);
 	    for (size2 = SecondHS; size2 > size1; size2 /= 2) ;
 	}
-	push("");	// 0-th recode
 }
 
 template <class val_t>
-KVpair<INT, val_t>* StrHash<val_t>::map(const char* strkey, bool record)
+KVpair<INT, val_t>* StrHash<val_t>::map(const char* skey, int record)
 {
-	INT	key = str2uint(strkey);
+	INT	key = str2uint(skey);
 	INT	v = key % size1;
 	INT	u = size2 - key % size2;
 	INT	v0 = v;
 	KVpair<INT, val_t>*	sh = hash + v;
 
-	while (sh->key && strcmp(strbuf + sh->key, strkey)) {
+	while (sh->key && strcmp(strkey(sh->key), skey)) {
 	    v = (v + u) % size1;
-	    if (v == v0) resize();
+	    if (v == v0) {
+		resize();
+		v = key % size1;
+	    }
 	    sh = hash + v;
 	}
-	if (!sh->val) {
-	    if (record) sh->key = push(strkey) - strbuf;
-	    else	sh = 0;
+	if (sh->val == un_def) {
+	    if (record & 2) {
+		sh->key = sl->size();
+		sl->push(skey);
+	    } else if (!record)
+		sh = 0;
 	}
 	return (sh);
 }
 
 template <class val_t>
-int StrHash<val_t>::count()
+int StrHash<val_t>::count() const
 {
 	int	c = 0;
 	for (KVpair<INT, val_t>* sh = hash; sh < hz; ++sh)
-	    if (sh->val) ++c;
+	    if (sh->val != un_def) ++c;
 	return (c);
 }
 
@@ -767,7 +928,7 @@ KVpair<INT, val_t>* StrHash<val_t>::press(int* n, val_t* sum)
 	if (sum) *sum = 0;
 	KVpair<INT, val_t>*	rh = hash;
 	for (KVpair<INT, val_t>* sh = hash; sh < hz; ++sh) {
-	    if (sh->val) {
+	    if (sh->val != un_def) {
 		*rh++ = *sh;
 		if (sum) *sum += sh->val;
 	    }
@@ -780,17 +941,20 @@ KVpair<INT, val_t>* StrHash<val_t>::press(int* n, val_t* sum)
 template <class val_t>
 void StrHash<val_t>::resize(int s)
 {
-	KVpair<INT, val_t>*	hold = hash;
-	KVpair<INT, val_t>*	zold = hz;
+	StrHash<val_t>	org(*this);
 	size1 = supprime(s? s: 2 * size1);
 	if (!size2)
 	    for (size2 = SecondHS; size2 > size1; size2 /= 2) ;
 	hash = new KVpair<INT, val_t>[size1];
 	hz = hash + size1;
 	clear();
-	for (KVpair<INT, val_t>* hw = hold; hw < zold; ++hw)
-	    if (hw->val) incr(hw->key, hw->val);
-	delete[] hold;
+	for (KVpair<INT, val_t>* hw = org.hash; hw < org.hz; ++hw) {
+	    if (hw->val != un_def) {
+		KVpair<INT, val_t>* kv = map(strkey(hw->key), 1);
+		*kv = *hw;
+	    }
+	}
+	org.erase_sl();
 }
 
 // insert sort; for any 0 <= i < num
@@ -816,7 +980,7 @@ protected:
 	double	llmt;
 	double	ulmt;
 	double	width;
-	double	(*transform)(double x);
+	double	(*nlitransform)(double x);
 	double	(*invtransform)(double x);
 	int	n_data;
 	int	idx;
@@ -897,16 +1061,16 @@ extern	int	chop(char* ps);
 extern	char*	next_wd(char** sp);
 extern	int	wordcmp(const char* a, const char* b, int n = INT_MAX);
 extern	UPTR	fbisrch(UPTR found, const UPTR key, FILE* fd, long left, long right, int width, CMPF cmpf);
-extern	int	comp2(int i, int j);
-extern	int	comp3(int i, int j, int k);
-extern	void	decomp(int i, int* t, int n);
+extern	int	comb2(int i, int j);
+extern	int	comb3(int i, int j, int k);
+extern	void	decomb(int* t, int n, int i = 2);
 extern	char*	strupr(char* str);
 extern	char*	strlwr(char* str);
 extern	int	countbit(unsigned long x);
 extern	double	rgauss();
 extern	int	rpoisson(double mu);
 extern	double	ktof(const char* str);
-extern	const	char* getarg(int& argc, const char**& argv, bool num = false);
+extern	const	char* getarg(int& argc, const char**& argv, bool num = false, int pv = 2);
 inline	long	ktol(const char* str) {return (long(ktof(str)));}
 inline	int	ktoi(const char* str) {return (int(ktof(str)));}
 inline	double	inverse(double x) {return (1. / x);};

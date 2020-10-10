@@ -22,7 +22,7 @@
 #ifndef  _MSEQ_H_
 #define  _MSEQ_H_
 
-struct	mSeq;
+class	mSeq;
 
 #include "seq.h"
 #include "gfreq.h"
@@ -84,8 +84,9 @@ struct DiThk {
 static	const	SeqThk	unit_dns = {1, 0, 1};
 
 class mSeq : public Seq {
+friend	class	mSeqItr;
 	VTYPE*	pseq;	// frequency & profile vector
-	Simmtx*	simmtx;
+const	Simmtx*	simmtx;
 	MsaState	wasmst;
 	CHAR**	internalres;
 #if SSHP
@@ -135,7 +136,8 @@ public:
 	mSeq*	cutseq(mSeq* dst, int snl);
 	mSeq*	extseq(mSeq* dst, int* grp, int snl, FTYPE nfact = 1);
 	mSeq*	extract(Seq* src, int* grp, int snl);
-	mSeq*	fgetseq(FILE* fd, const char* attr = 0, const char* attr2 = 0);
+template <typename file_t>
+	mSeq*	fgetseq(file_t fd, const char* attr = 0, const char* attr2 = 0);
 	mSeq*	read_dbseq(DbsDt* dbf, long pos);
 	mSeq*	postseq(CHAR* ss) {Seq::postseq(ss); return (this);}
 	mSeq&	operator=(mSeq& src) {
@@ -154,7 +156,7 @@ public:
 	    if (s[many] == nil_code && s >= internalres[i]) return (inex.exgr? 0: alprm.tgapf);
 	    return (1);
 	}
-	void	setsimmtx(Simmtx* sm) {simmtx = sm;}
+	void	setsimmtx(const Simmtx* sm) {simmtx = sm;}
 	void	ntor(VTYPE* v, int k, VTYPE w);
 	void 	seq2vec(VTYPE* v, CHAR* s, FTYPE* w);
 	void	nuc2cvec(VTYPE* v, CHAR* s, FTYPE* w);
@@ -188,6 +190,14 @@ public:
 	    : Seq(sd, which, snl) {clear();}
 	~mSeq();
 };
+
+template <typename file_t>
+mSeq* mSeq::fgetseq(file_t fd, const char* attr, const char* attr2)
+{
+	clean();
+	if (!Seq::fgetseq(fd, attr, attr2)) return (0);
+	return (this);
+}
 
 /*******************************************************************
 	Sequence iterator
@@ -328,6 +338,7 @@ const	SeqThk*	dns;
 	    } else if (thk_mode == 1) temp.repos();
 	    return (temp);
 	}
+	VTYPE*	prof() {return (vss? vss + felm: msd->simmtx->mtx[*res]);}
 	bool	dullend();
 	void	reset(int n = 0, mSeq* sd = 0);
 	void	sqset(CHAR* ss, int n = 0) {SeqItr::sqset(ss, n);}

@@ -29,8 +29,6 @@
 
 #include "cmn.h"
 
-extern	int	thread_num;
-extern	int	max_queue_num;
 extern	void	usage();
 
 static	const	char*	CATALOG = "catalog";
@@ -68,8 +66,6 @@ public:
 	void	dequeue(var_t** fsd, int n = 1);
 };
 
-static	const	float	FACT_QUEUE = 1.5;
-
 template <class var_t>
 void ThQueue<var_t>::enqueue(var_t** vars, int n)
 {
@@ -81,7 +77,7 @@ void ThQueue<var_t>::enqueue(var_t** vars, int n)
 	    if (vars[n]) fprintf(stderr, "e%d: %d\n", n, vars[n]->sid);
 	    else	 fprintf(stderr, "e%d: z\n", n);
 #endif // QDEBUG
-	    gswap(varque[wp], vars[n]);
+	    swap(varque[wp], vars[n]);
 	    ++wp; ++remain;
 	    if (wp == qsize) wp = 0;
 	}
@@ -96,7 +92,7 @@ void ThQueue<var_t>::dequeue(var_t** vars, int n)
 	while (remain == 0)
 	     pthread_cond_wait(&not_empty, &mutex);
 	while (--n >= 0) {
-	    gswap(vars[n], varque[rp]);
+	    swap(vars[n], varque[rp]);
 #if QDEBUG
 	    if (vars[n]) fprintf(stderr, "d%d: %d\n", n, vars[n]->sid);
 	    else	 fprintf(stderr, "d%d: z\n", n);
@@ -343,23 +339,43 @@ protected:
 	int	fixedin;	// input from a fixed file
 	int	baseno;		// > 0 for group2
 	int	ceilno;
-	FILE*	fd;
 	const	char*	fname;
+	FILE*	fd;
+#if USE_ZLIB
+	gzFile	gzfd;
+#endif
 	void	close_file() {
-	    if (fd) fclose(fd);
-	    fd = 0; fname = 0;
+	    fname = 0;
+	    if (fd) {fclose(fd); fd = 0;}
+#if USE_ZLIB
+	    if (gzfd) {fclose(gzfd); gzfd = 0;}
+#endif
 	}
 public:
 	int	var_no;
 	void	reset();
 	VarLoader(CalcServer<var_t>* cs, int fin = 0, int bs = 0, int cl = 0) 
-	    : svr(cs), fixedin(fin), baseno(bs), ceilno(cl), fd(0), fname(0) {
+	    : svr(cs), fixedin(fin), baseno(bs), ceilno(cl), fname(0), fd(0)
+#if USE_ZLIB
+		, gzfd(0)
+#endif
+	{
 	    if (!svr->memb) mname = members = 0;
 	    if (!ceilno) ceilno = svr->memsize();
 	    reset();
 	}
 	~VarLoader() {
 	    if (fd) fclose(fd);
+#if USE_ZLIB
+	    if (gzfd) fclose(gzfd);
+#endif
+	}
+	bool	active_file() {
+#if USE_ZLIB
+	    return (fd || gzfd);
+#else
+	    return (fd);
+#endif
 	}
 	InSt	at(int sid, var_t** inface = 0);
 	InSt	nextvar(var_t** var);
@@ -443,7 +459,7 @@ static void* worker_func(void* arg)
 template <class var_t>
 int CalcServer<var_t>::MasterWorker()
 {
-	int	cpu_num = sysconf(_SC_NPROCESSORS_CONF);
+	cpu_num = sysconf(_SC_NPROCESSORS_CONF);
 
 	if (thread_num < 0)	thread_num = cpu_num;
 	if (max_queue_num <= 0)	max_queue_num = int(FACT_QUEUE * thread_num);
@@ -488,6 +504,9 @@ template <class var_t>
 void VarLoader<var_t>::reset()
 {
 	if (fd) {fclose(fd); fd = 0;} var_no = 0;
+#if USE_ZLIB
+	if (gzfd) {fclose(gzfd); gzfd = 0;} var_no = 0;
+#endif
 	if (svr->memb) {
 	    if (baseno && svr->memb->grp2) {
 		members = svr->memb->grp2;

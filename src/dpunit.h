@@ -80,8 +80,8 @@ struct SwgDPunit_pf : public SwgDPunit {
 
 static const DPunit blank_dpunit = {0, 0, 0};
 static const DPunit black_dpunit = {NEVSEL, 0, 0};
-static const SwgDPunit blank_swgdpunit = {0, 0, POS_INT, NEG_INT};
-static const SwgDPunit black_swgdpunit = {NEVSEL, 0, POS_INT, NEG_INT};
+static const SwgDPunit blank_swgdpunit = {0, 0, POS_INT, NEG_INT, 0, 0, 0, 0, 0};
+static const SwgDPunit black_swgdpunit = {NEVSEL, 0, POS_INT, NEG_INT, 0, 0, 0, 0, 0};
 
 template <class recd_t>
 void    clear(recd_t* rcd);

@@ -301,13 +301,13 @@ VTYPE Fwd2b<recd_t>::forwardA(long pp[])
 		    hdiag->ptr = vmf? vmf->add(m, n, hdiag->ptr): n - m;
 		}
 #if FDEBUG
-		if (algmode.nsa & 8) {
+		if (OutPrm.debug) {
 		    printf("%2d %2d %6.1lf %6.1lf %6.1lf %2d\n",
 			m + 1, n + 1, (double) hdiag->val, (double) g->val,
 			(double) f1.val, hdiag->dir);
 		}
 #endif
-		gswap(*hdiag, *h);
+		swap(*hdiag, *h);
 	    }   /* end of n-loop */
 	    if (a_in_zone) ++api;
 	    if (a->inex.exgr) store_ild(mfd, h - 1, --n - m, mxd);
@@ -407,7 +407,7 @@ VTYPE Fwd2b<recd_t>::forwardB(long pp[])
 	    reset(f1);
 	    reset(f2);
 #if FDEBUG
-	if (algmode.nsa & 8) {
+	if (OutPrm.debug) {
 	    printf("%2d %2d %2d", m + 1, n + 1, h->dir);
 	    putvar(h->val); putchar('\n');
 	}
@@ -479,7 +479,7 @@ VTYPE Fwd2b<recd_t>::forwardB(long pp[])
 		    }
 		}
 #if FDEBUG
-		if (algmode.nsa & 8) {
+		if (OutPrm.debug) {
 		    printf("%2d %2d %2d ", m + 1, n + 1, mx->dir);
 		    putvar(mx->val); putvar(diag); 
 		    putvar(g->val); putvar(f1->val);

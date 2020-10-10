@@ -68,10 +68,12 @@ class Slforest : public AdjacentMat {
 	void	newick_i(Slnode* node, bool newpar);
 public:
 	std::vector<Slnode*>*	trees;
-	Slforest(const char* fname, FTYPE distthr)
-	    : AdjacentMat(fname, distthr), 
-		nodes(0), fo(0), clmpos(0), trees(0)
-	    {if (n_edge) sltree();}
+	Slforest(const char* fname, FTYPE distthr, int clmn, bool sim)
+	    : AdjacentMat(fname, distthr, clmn, sim), 
+		nodes(0), fo(0), clmpos(0), trees(0) {
+	    if (n_edge) sltree();
+	    else usage();
+	}
 	Slforest(int argc, const char** argv, int molc, 
 	    const char* catalog = 0, int min_seqs = 0)
 	    : AdjacentMat(argc, argv, molc, catalog, min_seqs),

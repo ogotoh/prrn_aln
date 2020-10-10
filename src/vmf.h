@@ -16,7 +16,7 @@
 *	Graduate School of Informatics, Kyoto University
 *	Yoshida Honmachi, Sakyo-ku, Kyoto 606-8501, Japan
 *
-*	Copyright(c) Osamu Gotoh <<o.gotoh@i.kyoto-u.ac.jp>>
+*	Copyright(c) Osamu Gotoh <<o.gotoh@aist.go.jp>>
 *****************************************************************************/
 
 #ifndef _VMF_H_
@@ -50,6 +50,7 @@ public:
 	}
 	long	writevmf(SKLP* rec);
 	long	vmfseek(long recno);
+	long	size() const {return (idx);}
 	int	readvmf(SKLP* rec, long recno);
 	SKL*	traceback(long pp);
 	SKL*	vmferror(Mfile& mfd);

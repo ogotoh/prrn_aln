@@ -24,7 +24,6 @@
 
 enum HPSCALE {PRIFT, KYTDO, HOPOW, CHARGE};
 
-static  const   double  PI = 3.14159265358979323846;
 static  const   int     NOSS = 3;
 static  const   int     NOHP = 4;
 static	const	int	HPDIM = 3;

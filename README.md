@@ -1,8 +1,8 @@
 # [ALN](./readme_aln.md), [PRRN](./readme_prrn.md), and [Refgs.pl](./readme_refgs.md)
 
 ## Pairwise sequence alignment, multiple sequence alignment, and homology-based gene prediction
-### Present Version 5.1.0
-### Last Updated 2017-02-15
+### Present Version 5.2.0
+### Last Updated 2020-10-09
 
 *   [Overview](#Ov)
 *   [System](#Sys)
@@ -17,7 +17,7 @@ This repository contains sequence alignment and homology-based gene prediction p
 
 ## <a name="Sys">System</a>
 
-Except for **refgs.pl**, the programs are written in C++ (ISO/C++), and distributed as source code. Users must compile the programs on their own system. Although the programs have been tested only on Linux and Cygwin, they are likely to be portable to most UNIX systems with little or no modifications. The distribution package also contains source codes of several related programs used by **refgs.pl**.
+Except for **refgs.pl**, the programs are written in C++ (ISO/C++), and distributed as source code. Users must compile the programs on their own system. Although the programs have been tested only on Linux, they are likely to be portable to most UNIX systems with little or no modifications. The distribution package also contains source codes of several related programs used by **refgs.pl**.
 
 ## <a name="Sf">Sequence File</a>
 
@@ -25,7 +25,7 @@ A sequence file may contain either a single sequence or a set of pre-aligned seq
 
 ### Single sequence
 
-Almost all popular formats for nucleotide and amino acid sequences, FASTA, GenBank, EMBL, SwissProt, PIR, and ProDB, are acceptable. A simple text file without any additional information is also fine. In any format, a line beginning with a semicolon (;) is regarded as a comment line. The specific format is recognized automatically by the first word in the first non-comment line of each file. Only single-letter codes are accepted for an amino acid. The nomenclature recommended by NC-IUB (Eur. J. Biochem. (1985) 150, 1-5) is followed to represent ambiguous nucleotides. The programs are not case-sensitive.
+Almost all popular formats for nucleotide and amino acid sequences, FASTA, GenBank, EMBL, SwissProt, PIR, and ProDB, are acceptable. A simple text file without any additional information is also fine. In any format, a line beginning with a semicolon (\;) is regarded as a comment line. The specific format is recognized automatically by the first word in the first non-comment line of each file. Only single-letter codes are accepted for an amino acid. The nomenclature recommended by NC-IUB (Eur. J. Biochem. (1985) 150, 1-5) is followed to represent ambiguous nucleotides. The programs are not case-sensitive.
 
 To represent the exon-intron structure of the parental gene, the format of FASTA file should be extended. A line starting with ';C' shows the exon boundaries (inclusive). More than one line may be used if necessary. The format after ';C ' is essentially the same as that of Feature field of a GenBank file. Start and end positions of each exon are separated by two dots. Individual exons are delimited by a comma. The term 'complement' indicates that the corresponding gene lies in the complementary strand of the genomic sequence. Two examples are as follows:
 
@@ -262,11 +262,15 @@ For native format of multiple sequences, lines starting with ";B ", ";b ", and "
 
 [[20]](https://academic.oup.com/nar/article-lookup/doi/10.1093/nar/gks708) Iwata, H. and Gotoh, O. (2012) Benchmarking spliced alignment programs including  Spaln2, an extended version of Spaln that incorporates additional species-specific features, _Nucleic Acids Res._, **40** (20) e161.
 
-[[21]](http://link.springer.com/protocol/10.1007%2F978-1-62703-646-7_2) Gotoh, O. (2013) "Heuristic Alignment Methods, in _Multiple Sequence Alignment Methods, (Russel, D. ed.), Methods in Molecular Biology_, Vol. **1079**, pp. 29-44, Humana Press.
+[[21]](http://link.springer.com/protocol/10.1007%2F978-1-62703-646-7_2) Gotoh, O. (2013) "Heuristic Alignment Methods, in _Multiple Sequence Alignment Methods, (Russel, D. ed.), _Methods in Molecular Biology_, Vol. **1079**, pp. 29-44, Humana Press.
 
 [[22]](http://www.biomedcentral.com/1471-2105/15/189) Gotoh, O., Morita, M. Nelson, D.R. (2014) "Assessment and refinement of eukaryotic gene structure prediction with gene-structure-aware multiple protein sequence alignment", _BMC Bioinformatics_ **15**:189.
 
+[[23]](https://doi.org/10.1093/bioinformatics/bty353) Gotoh, O. (2018) "Modeling one thousand intron length distributions with fitild", _Bioinformatics_ **34** (19) 3258-3264.
+
+[24] Gotoh, O. "Cooperation of Spaln and Prrn5 for construction of gene-structure-aware multiple sequence alignment, *Methods in Molecular Biology*, in press.
+
 * * *
 
-Copyright (c) 1997-2017 Osamu Gotoh (o.gotoh@aist.go.jp) All Rights Reserved.
+Copyright (c) 1997-2020 Osamu Gotoh (o.gotoh@aist.go.jp) All Rights Reserved.
 

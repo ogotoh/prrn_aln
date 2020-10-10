@@ -16,7 +16,7 @@
 *	Graduate School of Informatics, Kyoto University
 *	Yoshida Honmachi, Sakyo-ku, Kyoto 606-8501, Japan
 *
-*	Copyright(c) Osamu Gotoh <<o.gotoh@i.kyoto-u.ac.jp>>
+*	Copyright(c) Osamu Gotoh <<o.gotoh@aist.go.jp>>
 *****************************************************************************/
 
 #ifndef  _PHYL_H_
@@ -378,13 +378,13 @@ void Btree<node_t>::GetTXtree(FILE* fd)
 		if (root->parent->left == root) root->parent->left = node;
 		if (root->parent->right == root) root->parent->right = node;
 	    }
-	    gswap(*node, *root);
-	    gswap(node->tid, root->tid);
+	    swap(*node, *root);
+	    swap(node->tid, root->tid);
 	    node->left->parent = node->right->parent = root;
 	    root->left->parent = root->right->parent = node;
 	    if (root->left  == root) root->left  = node;
 	    if (root->right == root) root->right = node;
-	    gswap(root, node);
+	    swap(root, node);
 	}
 }
 
@@ -483,7 +483,7 @@ class PpPrm : public DistTree {
 	char*	baseline;
 	void	fillstr(int cha, int from, int to);
 	void	printcur(Knode* node);
-	Gnm2tab*	g2t;
+//	Gnm2tab*	g2t;
 public:
 	PpPrm(FILE* fd, Seq* sd, Subset* ss, TreeMet meth, double bs = 0);
 	PpPrm(FILE* fd, DistMat* dmat, TreeMet meth, double bs = 0);
@@ -512,6 +512,7 @@ public:
 extern	TOUTMODE	treemode;
 
 extern	void	divseq(FSTAT* stat, Seq* sd, int* group1, int* group2);
+extern	FTYPE*	calcdist(mSeq** sqs, int nn, DistCal realn);
 extern	FTYPE*	calcdist(Seq* sd, Subset* ss = 0);
 extern	FTYPE*	calcdistsum(Seq* sd, Subset* ss = 0, FTYPE* dist = 0);
 extern	FTYPE*	calcdist_i(Seq* sd, int k, Subset* ss = 0, FTYPE* dist = 0);

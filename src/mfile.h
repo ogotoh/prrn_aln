@@ -16,7 +16,7 @@
 *	Graduate School of Informatics, Kyoto University
 *	Yoshida Honmachi, Sakyo-ku, Kyoto 606-8501, Japan
 *
-*	Copyright(c) Osamu Gotoh <<o.gotoh@i.kyoto-u.ac.jp>>
+*	Copyright(c) Osamu Gotoh <<o.gotoh@aist.go.jp>>
 *****************************************************************************/
 
 #ifndef  _MFILE_
@@ -30,10 +30,13 @@ class Mfile {
 	size_t	recno;
 public:
 	Mfile(size_t rec_size);
+	Mfile(const Mfile& src);
 	~Mfile() {delete[] ptr;}
 	void	write(const UPTR pi);
+	void	undo(int n = 1) {cur -= n * wwd; recno -= n;}
 	UPTR	flush();
 	size_t	size() {return recno;}
+	Mfile& operator=(const Mfile& src);
 };
 
 #endif

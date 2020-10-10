@@ -22,7 +22,7 @@
 *	Graduate School of Informatics, Kyoto University
 *	Yoshida Honmachi, Sakyo-ku, Kyoto 606-8501, Japan
 *
-*	Copyright(c) Osamu Gotoh <<o.gotoh@i.kyoto-u.ac.jp>>
+*	Copyright(c) Osamu Gotoh <<o.gotoh@aist.go.jp>>
 *****************************************************************************/
 
 #ifndef  _IOLIB_
@@ -31,6 +31,7 @@
 #include "adddef.h"
 #include <stdarg.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
 /*	Default Paths/Names of FIles	*/
 
@@ -65,10 +66,10 @@
 static	const	int	QUERY = INT_MIN;
 static	const	int	SILENT = QUERY + 1;
 static	const	int	POPUP = QUERY + 2;
-static	const	double	DQUERY = QUERY + 0.L;
+static	const	float	FQUERY = QUERY + 0.L;
 static	const	int	n_tabpath = 3;
-static	const	double	DSILENT = DQUERY + 1.L;
-static	const	double	DPOPUP = DQUERY + 2.L;
+static	const	float	FSILENT = FQUERY + 1.L;
+static	const	float	FPOPUP = FQUERY + 2.L;
 static	const	char*	esc_code = "\x1b[";
 static	const	char*	font_end = "</font></b>";
 
@@ -188,13 +189,68 @@ extern	int	sgetiarray(int* array, int size, const char** pps);
 extern	int	fgetiarray(int* array, int size, FILE* fd);
 extern	int	getiarray(int* array, int size, const char* ps);
 extern	size_t	file_size(FILE* fd);
-extern	size_t	file_size(const char* fn);
 extern	FILE*	out_fd;
+extern	const	char*	gz_unsupport;
+
+inline	size_t	file_size(const char* fn) {
+	struct	stat buf;
+	return (stat(fn, &buf)? 0: buf.st_size);
+}
+
+inline	time_t	access_time(const char* fn) {
+	struct	stat buf;
+	return (stat(fn, &buf)? 0: buf.st_atime);
+}
+
+inline	time_t	modify_time(const char* fn) {
+	struct	stat buf;
+	return (stat(fn, &buf)? 0: buf.st_mtime);
+}
+
+inline	time_t	change_time(const char* fn) {
+	struct	stat buf;
+	return (stat(fn, &buf)? 0: buf.st_ctime);
+}
+
+inline	bool	is_file(const char* fn) {
+	struct	stat buf;
+	if (stat(fn, &buf)) return (false);
+	return (S_ISREG(buf.st_mode));
+}
+
+inline	bool	is_dir(const char* fn) {
+	struct	stat buf;
+	if (stat(fn, &buf)) return (false);
+	return (S_ISDIR(buf.st_mode));
+}
+
+#if USE_ZLIB
+extern	gzFile	gzopenpbe(const char* path, const char* name, const char* extent, 
+			const char* opt, int lvl = 0, char* buf = 0);
+#endif
 
 inline	FILE* outfd(const char* fn)
 {
 	if (!fn || !(out_fd = fopen(fn, "w"))) out_fd = stdout;
 	return (out_fd);
+}
+
+// Is xxx.gz file?
+
+inline bool is_gz(const char* fn)
+{
+	const	char*	dot = strrchr(fn, '.');
+	return (dot && !strcmp(dot + 1, "gz"));
+}
+
+// read through until new line
+
+template <typename file_t>
+int	flush_line(file_t fd)
+{
+	int	c;
+	while ((c = fgetc(fd)) != EOF && c != '\n') ;
+	return (c);
 }
 
 /*  End of iolib.h  */

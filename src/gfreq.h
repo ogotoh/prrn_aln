@@ -16,7 +16,7 @@
 *	Graduate School of Informatics, Kyoto University
 *	Yoshida Honmachi, Sakyo-ku, Kyoto 606-8501, Japan
 *
-*	Copyright(c) Osamu Gotoh <<o.gotoh@i.kyoto-u.ac.jp>>
+*	Copyright(c) Osamu Gotoh <<o.gotoh@aist.go.jp>>
 *****************************************************************************/
 
 #ifndef	_GFREQ_H_
@@ -34,17 +34,19 @@ inline	void	warnovf(int w)	{warnrecovf |= w;}
 
 static	const	int	DGSRECOVF = 1;
 static	const	int	CANRECOVF = 2;
-static	const	IDELTA	ZeroDelta = {0, 0};
-static	const	IDELTA	LastDelta = {INT_MAX, 0};
 static	const	GFREQ	zerogfq = {0, 0, 0};
 static	const	GFREQ	delmgfq = {-1, 0, 0};
 static	const	GFREQ	unitgfq[2] = {{0, 1, 1}, {-1, 0, 0}};
+static	const	IDELTA	ZeroDelta = {0, 0};
+static	const	IDELTA	LastDelta = {INT_MAX, 0};
+
+class	mSeq;
 
 class	Gfq {
 	GFREQ*	sbuf;
 	GFREQ*	tbuf;
 	GFREQ*	rbuf;
-	mSeq*&	msd;
+	mSeq*	msd;
 	int*	lbuf;
 	int	seq2gfq(int kk, CHAR* ps);
 	void	store(const int& kk, const int* wk);
@@ -84,6 +86,6 @@ extern	VTYPE	newgap(const GFREQ* cf, const IDELTA* dlc, int j);
 extern	VTYPE	newgap(const GFREQ* df, int i, const IDELTA* dld);
 extern	void	newdelta(IDELTA* dlt, const GFREQ* df, const IDELTA* dln, int n = 1);
 extern	void	incdelta(IDELTA* dlt, int n = 1);
-extern	void	incdelta(IDELTA* dlt, IDELTA* dln, int n = 1);
+extern	void	incdelta(IDELTA* dlt, const IDELTA* dln, int n = 1);
 extern	void	print_min_afq();
 #endif

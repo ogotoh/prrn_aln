@@ -21,7 +21,7 @@
 *	Graduate School of Informatics, Kyoto University
 *	Yoshida Honmachi, Sakyo-ku, Kyoto 606-8501, Japan
 *
-*	Copyright(c) Osamu Gotoh <<o.gotoh@i.kyoto-u.ac.jp>>
+*	Copyright(c) Osamu Gotoh <<o.gotoh@aist.go.jp>>
 *****************************************************************************/
 
 #ifndef  _AUTOCOMP_
@@ -39,7 +39,8 @@ static	const	char	logfn[] = "aln.log";
 
 //	specific to mseq
 
-struct InputSeqTest {Strlist* sname; int num, many, maxmany, space, bad; INT molc;};
+struct InputSeqTest {Strlist* sname; int num, many, maxmany, space, bad, maxlen, minlen; 
+			INT molc, dels;};
 
 template <class seq_t> class SeqLoader;
 
@@ -60,7 +61,7 @@ protected:
 public:
 const	char*	logfile;
 	FILE*	logfd;
-	char	tmpdir[MAXL];
+	char	tmpdir[LINE_MAX];
 	Subset*	ss;
 	SeqLoader<seq_t>*	sql1;
 	SeqLoader<seq_t>*	sql2;
@@ -106,12 +107,14 @@ const	char*	logfile;
 	    switch (this->input_mode) {
 	      case IM_PARA: fin = 1; 
 	      case IM_ALTR: case IM_EVRY: case IM_GRUP: case IM_SCAN:
-		this->input_ns = 2; break;
+		this->input_ns = 2;
+		break;
 	      case IM_ADON: case IM_TREE:
 		this->input_ns = 0;
-		return;
+		break;
 	      default:
-		this->input_ns = 1; break;
+		this->input_ns = 1;
+		break;
 	    }
 	    this->memb = new InFiles(this->catalog, argc, argv, 
 		this->input_mode, this->calc_mode);
@@ -146,7 +149,7 @@ const	char*	logfile;
 	  {
 	    delete sql1; delete sql2;
 	  }
-	char*	restsq(char* str, int n, int noseq);
+	char*	restsq(char* str, int n, int nseq);
 	void	setshuffle(int in, int nj, int wh);
 	int	nextvars();
 	int	localoption(int& argc, const char**& argv);
@@ -207,7 +210,7 @@ public:
 
 template <class seq_t>
 class MakeMsa {
-	char	wrkstr[MAXL];
+	char	wrkstr[LINE_MAX];
 	char*	wrkvar;
 	char*	seqnam(Tnode* root);
 	AlnServer<seq_t>* svr;
@@ -258,7 +261,7 @@ InSt SeqLoader<seq_t>::nextseq(seq_t** sd, bool readin)
 	    const char*	attr2 = 0;
 	    bool	first = false;
 	    while (true) {
-		while (!this->fd) {
+		while (!this->active_file()) {
 		    if (!(this->mname && *this->mname)) return (IS_END);
 		    if (!**this->mname) {
 			if (svr->input_mode == IM_GRUP) return (IS_END);
@@ -269,11 +272,16 @@ InSt SeqLoader<seq_t>::nextseq(seq_t** sd, bool readin)
 			if (svr->input_mode == IM_MULT) attr2 = "M";
 			first = true;
 			if (**this->mname == DBSID) break;
+#if USE_ZLIB
+			this->fd = (*sd)->openseq(*this->mname, &this->gzfd);
+#else
 			this->fd = (*sd)->openseq(*this->mname);
+#endif
 			if (this->fixedin != 1) {
-			    if (!this->fd) prompt("%s not found !\n", *this->mname);
+			    if (!this->active_file())
+				prompt("%s not found !\n", *this->mname);
 			    ++this->mname;
-			} else if (!this->fd) return (IS_END);
+			} else if (!this->active_file()) return (IS_END);
 		    }
 		}
 		if (*this->mname && **this->mname == DBSID) {	// Get from Database File */
@@ -282,7 +290,10 @@ InSt SeqLoader<seq_t>::nextseq(seq_t** sd, bool readin)
 		    else if (!sdb) return (IS_END);
 		    break;
 		} else {
-		    if ((*sd)->fgetseq(this->fd, attr, attr2)) break;
+		    if (this->fd && (*sd)->fgetseq(this->fd, attr, attr2)) break;
+#if USE_ZLIB
+		    if (this->gzfd && (*sd)->fgetseq(this->gzfd, attr, attr2)) break;
+#endif
 		    this->close_file();
 		    if (this->fixedin == 1) return (IS_END);
 		    if (first) return (IS_ERR);			// empty or absent
@@ -482,7 +493,16 @@ static	int	visit = 0;
 		break;
 	      case 'p':
 		switch (*val) {
+		  case 'a': 
+			if (isdigit(val[1])) ++val;
+			else if (!val[1] && isdigit(argv[1][0])) {
+			    val = *++argv; --argc;
+			} else val = 0;
+			if (val) polyA.setthr(val);
+			else	polyA.setthr(def_polya_thr);
+			break;
 		  case 'd': OutPrm.descrp = 1; break;
+		  case 'D': OutPrm.debug = 1; break;
 		  case 'e': OutPrm.trimend = !OutPrm.trimend; break;
 		  case 'f': OutPrm.deflbl = 1; break;
 		  case 'g': OutPrm.taxoncode = 3; break;	// genus
@@ -497,8 +517,10 @@ static	int	visit = 0;
 		  case 's': OutPrm.sortodr = isdigit(val[1])? atoi(val+1): 1; break;
 		  case 't': OutPrm.deflbl = 2; break;
 		  case 'w': algmode.thr = 0; break;
+		  case 'W': OutPrm.printweight = 1; break;
 		  case 'x': OutPrm.supself = 1; break;
-		  case 'J': case 'm': case 'u': case 'v': setexprm_z(val); break;
+		  case 'J': case 'm': case 'u': case 'v':
+			setexprm_z(argc, argv); break;
 		  default: break;
 		}
 		break;
@@ -549,9 +571,9 @@ static	int	visit = 0;
 		    topath(tmpdir, val);
 		break;
 	      case 'u': case 'v': case 'w': 
-		readalprm(opt); break;
-	      case 'y': readalprm(val); break;
-	      case 'z': setexprm_z(val); break;
+		readalprm(argc, argv); break;
+	      case 'y': readalprm(argc, argv, 2); break;
+	      case 'z': setexprm_z(argc, argv); break;
 	      default: break;
 	    }
 	  }
@@ -613,6 +635,7 @@ int AlnServer<seq_t>::auto_comp(bool multhr)
 	  case IM_MULT:
 	    if ((inst_a = sql1->nextseq(ins_a, readin)) == IS_OK)
 		(*ins_a)->sid = this->idx_a = 0;
+	    setdefmolc((*ins_a)->inex.molc);
 	    break;
 	  case IM_EVRY:				// all combinations
 	    if (inst_a == IS_ERR && (inst_a = sql1->nextseq(ins_a)) == IS_OK)
@@ -625,6 +648,7 @@ int AlnServer<seq_t>::auto_comp(bool multhr)
 		if ((inst_b = sql2->nextseq(ins_b)) == IS_OK)
 		   (*ins_b)->sid = this->idx_b = 1;
 	    }
+	    setdefmolc((*ins_a)->inex.molc);
 	    break;
 	  case IM_FvsO:				// 1st vs others
 	    if (inst_a == IS_ERR && (inst_a = sql1->nextseq(ins_b)) == IS_OK)
@@ -654,6 +678,7 @@ int AlnServer<seq_t>::auto_comp(bool multhr)
 			(*ins_b)->sid = this->idx_b = 0;
 		}
 	    }
+	    setdefmolc((*ins_a)->inex.molc);
 	    break;
 	  case IM_GRUP:				// inter-groups
 	    if (inst_a == IS_ERR && (inst_a = sql1->nextseq(ins_a)) == IS_OK)
@@ -663,6 +688,7 @@ int AlnServer<seq_t>::auto_comp(bool multhr)
 		if ((inst_b = sql2->nextseq(ins_b)) == IS_OK)
 		    (*ins_b)->sid = this->idx_b = sql2->var_no;
 	    }
+	    setdefmolc((*ins_a)->inex.molc);
 	    break;
 	  case IM_ALTR:
 	    if ((inst_a = sql1->nextseq(ins_a)) == IS_OK)
@@ -707,6 +733,7 @@ int AlnServer<seq_t>::nextvars()
 	do {
 	 switch (this->input_mode) {
 	  case IM_SNGL:			// single sequence
+	  case IM_MULT:			// multiple sequence
 	    inst_a = sql1->nextseq(ins_a, this->jobcode != 'n');
 	    if (inst_a == IS_OK) {
 		++no_read; (*ins_a)->sid = ++this->idx_a;
@@ -814,11 +841,11 @@ int AlnServer<seq_t>::nextvars()
 ********************************************************************/
 
 template <class seq_t>
-char* AlnServer<seq_t>::restsq(char* str, int n, int noseq)
+char* AlnServer<seq_t>::restsq(char* str, int n, int nseq)
 {
-	if (n >= noseq) return (strcpy(str, "gq"));
+	if (n >= nseq) return (strcpy(str, "gq"));
 	str[0] = '\0';
-	for (char* s = str; ++n <= noseq; s = str + strlen(str))
+	for (char* s = str; ++n <= nseq; s = str + strlen(str))
 	    sprintf(s, "%d ", n);
 	return (str);
 }

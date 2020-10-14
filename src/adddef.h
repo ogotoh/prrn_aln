@@ -86,7 +86,7 @@ static	const	char	OPTCHAR = '-';
 //	if no zlib.h #define USE_ZLIB 0
 
 #ifndef USE_ZLIB
-#define USE_ZLIB 1
+#define USE_ZLIB 0
 #endif
 #if USE_ZLIB
 #include <zlib.h>
